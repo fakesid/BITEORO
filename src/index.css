@@ -1,0 +1,149 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    @apply bg-surface-secondary text-text-primary font-sans;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+
+  ::selection {
+    @apply bg-brand-200 text-brand-900;
+  }
+
+  /* Smooth scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-text-disabled rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-text-muted;
+  }
+}
+
+@layer components {
+  /* Card */
+  .card {
+    @apply bg-surface rounded-2xl border border-border shadow-card;
+  }
+  .card-hover {
+    @apply card transition-all duration-200 hover:shadow-card-hover hover:border-brand-200;
+  }
+
+  /* Buttons */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98];
+  }
+  .btn-primary {
+    @apply btn bg-brand-500 text-white hover:bg-brand-600 shadow-sm hover:shadow-md;
+  }
+  .btn-secondary {
+    @apply btn bg-surface border border-border text-text-primary hover:bg-surface-tertiary hover:border-text-disabled;
+  }
+  .btn-ghost {
+    @apply btn bg-transparent text-text-secondary hover:bg-surface-tertiary hover:text-text-primary;
+  }
+  .btn-danger {
+    @apply btn bg-danger-50 text-danger-600 border border-danger-100 hover:bg-danger-100 hover:text-danger-700;
+  }
+  .btn-success {
+    @apply btn bg-success-50 text-success-600 border border-success-100 hover:bg-success-100 hover:text-success-700;
+  }
+  .btn-sm {
+    @apply text-sm px-3 py-1.5;
+  }
+  .btn-md {
+    @apply text-sm px-4 py-2.5;
+  }
+  .btn-lg {
+    @apply text-base px-6 py-3;
+  }
+  .btn-icon {
+    @apply btn p-2;
+  }
+
+  /* Inputs */
+  .input {
+    @apply w-full px-4 py-2.5 rounded-xl border border-border bg-surface text-text-primary text-sm placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-400 transition-all duration-200;
+  }
+  .input-error {
+    @apply input border-danger-500 focus:ring-danger-500/20 focus:border-danger-500;
+  }
+
+  /* Badges */
+  .badge {
+    @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold;
+  }
+  .badge-success {
+    @apply badge bg-success-50 text-success-700 ring-1 ring-inset ring-success-500/20;
+  }
+  .badge-warning {
+    @apply badge bg-warning-50 text-warning-700 ring-1 ring-inset ring-warning-500/20;
+  }
+  .badge-danger {
+    @apply badge bg-danger-50 text-danger-700 ring-1 ring-inset ring-danger-500/20;
+  }
+  .badge-info {
+    @apply badge bg-info-50 text-info-700 ring-1 ring-inset ring-info-500/20;
+  }
+  .badge-brand {
+    @apply badge bg-brand-50 text-brand-700 ring-1 ring-inset ring-brand-500/20;
+  }
+  .badge-neutral {
+    @apply badge bg-surface-tertiary text-text-secondary ring-1 ring-inset ring-border;
+  }
+
+  /* Stat Card */
+  .stat-card {
+    @apply card p-5 flex flex-col gap-1;
+  }
+  .stat-label {
+    @apply text-xs font-medium text-text-muted tracking-wide;
+  }
+  .stat-value {
+    @apply text-2xl font-bold text-text-primary;
+  }
+  .stat-meta {
+    @apply text-xs text-text-muted;
+  }
+
+  /* Table */
+  .table-container {
+    @apply overflow-x-auto rounded-2xl border border-border bg-surface;
+  }
+  .table-head {
+    @apply bg-surface-secondary text-text-muted text-xs font-semibold uppercase tracking-wider;
+  }
+  .table-row {
+    @apply border-b border-border-light hover:bg-surface-secondary/50 transition-colors duration-150;
+  }
+  .table-cell {
+    @apply px-5 py-3.5 text-sm text-text-primary;
+  }
+
+  /* Section headers */
+  .section-title {
+    @apply text-lg font-semibold text-text-primary;
+  }
+  .page-title {
+    @apply text-2xl font-bold text-text-primary tracking-tight;
+  }
+
+  /* Skeleton loader */
+  .skeleton {
+    @apply bg-surface-tertiary rounded-lg animate-pulse;
+  }
+}

@@ -1,0 +1,9 @@
+:root {
+  /* default to the Instagram‑inspired gradient so the app starts with the new look */
+  --accent-gradient: linear-gradient(90deg, #feda75 0%, #d62976 50%, #962fbf 75%, #4f5bd5 100%);
+}
+
+/* Example utility for Tailwind JIT: */
+.bg-accent-gradient {
+  background-image: var(--accent-gradient);
+}
