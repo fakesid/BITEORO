@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import "@fontsource/montserrat/800.css";
-import { FiHome, FiUsers, FiClock, FiGrid, FiPackage, FiSettings, FiLogOut, FiBell, FiChevronLeft, FiMenu } from "react-icons/fi";
+import { FiHome, FiUsers, FiClock, FiGrid, FiPackage, FiSettings, FiLogOut, FiChevronLeft, FiMenu, FiChevronDown, FiUser } from "react-icons/fi";
 import GlobalSearch from "./components/GlobalSearch";
+import NotificationBell from "./components/NotificationBell";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "./firebase";
 import Home from "./pages/Home";
@@ -34,6 +35,8 @@ function App() {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [onboardingChecked, setOnboardingChecked] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const profileRef = useRef(null);
   const { user, loading, logout } = useAuth();
   const currentTab = tabs.find((tab) => tab.name === activeTab);
 
@@ -49,6 +52,17 @@ function App() {
       window.removeEventListener('navigateToSignUp', handleNavigateToSignUp);
       delete window.setAuthView;
     };
+  }, []);
+
+  // Close profile dropdown on click outside
+  useEffect(() => {
+    function handleClick(e) {
+      if (profileRef.current && !profileRef.current.contains(e.target)) {
+        setProfileOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
   // Close mobile sidebar on tab change
@@ -188,19 +202,61 @@ function App() {
 
           {/* Right actions */}
           <div className="flex items-center gap-2 shrink-0">
-            <button className="btn-ghost p-2 rounded-lg relative" title="Notifications">
-              <FiBell className="text-lg text-text-muted" />
-            </button>
-            <div className="hidden sm:flex items-center gap-3 ml-2 pl-3 border-l border-border">
-              <div className="w-8 h-8 rounded-full bg-brand-gradient flex items-center justify-center">
-                <span className="text-white text-xs font-bold">
-                  {user?.email?.[0]?.toUpperCase() || "U"}
-                </span>
-              </div>
-              <div className="hidden lg:block">
-                <p className="text-sm font-medium text-text-primary leading-tight">{user?.email?.split("@")[0]}</p>
-                <p className="text-2xs text-text-muted">Owner</p>
-              </div>
+            <NotificationBell onNavigate={(tab) => setActiveTab(tab)} />
+            <div className="hidden sm:flex items-center gap-3 ml-2 pl-3 border-l border-border relative" ref={profileRef}>
+              <button
+                onClick={() => setProfileOpen((v) => !v)}
+                className="flex items-center gap-2 rounded-xl px-2 py-1.5 -mx-2 hover:bg-surface-secondary transition-colors"
+              >
+                <div className="w-8 h-8 rounded-full bg-brand-gradient flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">
+                    {user?.email?.[0]?.toUpperCase() || "U"}
+                  </span>
+                </div>
+                <div className="hidden lg:block text-left">
+                  <p className="text-sm font-medium text-text-primary leading-tight">{user?.email?.split("@")[0]}</p>
+                  <p className="text-2xs text-text-muted">Owner</p>
+                </div>
+                <FiChevronDown className={`hidden lg:block text-text-muted text-sm transition-transform duration-200 ${profileOpen ? "rotate-180" : ""}`} />
+              </button>
+
+              {/* Profile dropdown */}
+              {profileOpen && (
+                <div className="absolute top-full right-0 mt-2 w-56 bg-surface border border-border-light rounded-xl shadow-modal z-50 overflow-hidden animate-fade-in">
+                  {/* User info */}
+                  <div className="px-4 py-3 border-b border-border-light">
+                    <p className="text-sm font-semibold text-text-primary truncate">{user?.email?.split("@")[0]}</p>
+                    <p className="text-2xs text-text-muted truncate">{user?.email}</p>
+                  </div>
+
+                  <div className="py-1">
+                    <button
+                      onClick={() => { setActiveTab("Settings"); setProfileOpen(false); }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-text-secondary hover:bg-surface-secondary transition-colors"
+                    >
+                      <FiSettings className="text-base text-text-muted" />
+                      Settings
+                    </button>
+                    <button
+                      onClick={() => { setActiveTab("Settings"); setProfileOpen(false); }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-text-secondary hover:bg-surface-secondary transition-colors"
+                    >
+                      <FiUser className="text-base text-text-muted" />
+                      My Account
+                    </button>
+                  </div>
+
+                  <div className="border-t border-border-light py-1">
+                    <button
+                      onClick={() => { logout(); setProfileOpen(false); }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-danger-600 hover:bg-danger-50 transition-colors"
+                    >
+                      <FiLogOut className="text-base" />
+                      Log out
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </header>

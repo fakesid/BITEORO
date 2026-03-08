@@ -48,7 +48,7 @@ function Home() {
             <div className="w-8 h-8 rounded-lg bg-surface-tertiary text-text-muted flex items-center justify-center">
               <FiClock className="text-base" />
             </div>
-            <h2 className="section-title">Recent Orders</h2>
+            <h2 className="section-title">Today's Orders</h2>
           </div>
           <div className="flex-1 overflow-y-auto p-4">
             <RecentOrders />
