@@ -42,7 +42,7 @@ export default function Login() {
       {/* Back to landing */}
       <button
         onClick={() => window.setAuthView?.("landing")}
-        className="fixed top-5 left-5 z-50 flex items-center gap-1.5 text-sm text-text-muted hover:text-text-primary transition-colors lg:text-white/70 lg:hover:text-white"
+        className="fixed top-3 left-3 sm:top-5 sm:left-5 z-50 flex items-center gap-1.5 text-sm px-2.5 py-1.5 rounded-lg bg-surface/80 backdrop-blur text-text-muted hover:text-text-primary transition-colors lg:bg-transparent lg:px-0 lg:py-0 lg:text-white/70 lg:hover:text-white"
       >
         <FiArrowLeft /> Back
       </button>
@@ -76,10 +76,10 @@ export default function Login() {
       </div>
 
       {/* Right: Login form */}
-      <div className="flex-1 flex items-center justify-center p-6 sm:p-8">
+      <div className="flex-1 flex items-center justify-center p-4 sm:p-8 pt-16 sm:pt-8">
         <div className="w-full max-w-[400px] animate-fade-in-up">
           {/* Mobile logo */}
-          <div className="lg:hidden flex items-center gap-2 mb-10">
+          <div className="lg:hidden flex items-center gap-2 mb-8">
             <div className="w-9 h-9 rounded-lg bg-brand-gradient flex items-center justify-center">
               <span className="text-white text-sm font-bold font-display">B</span>
             </div>

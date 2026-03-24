@@ -74,20 +74,20 @@ export default function Inventory() {
   };
 
   return (
-    <div className="p-6 md:p-8 max-w-6xl mx-auto">
+    <div className="p-4 sm:p-6 md:p-8 max-w-6xl mx-auto">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
           <h2 className="page-title">Inventory</h2>
           <p className="text-sm text-text-muted mt-1">Track and manage your stock levels</p>
         </div>
-        <button onClick={() => setShowAddForm(!showAddForm)} className="btn-primary btn-lg">
+        <button onClick={() => setShowAddForm(!showAddForm)} className="btn-primary btn-lg w-full sm:w-auto justify-center">
           <FiPlus className="mr-1.5" /> Add item
         </button>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <div className="card p-4 text-center">
           <p className="text-2xl font-bold text-text-primary">{total}</p>
           <p className="text-xs text-text-muted mt-0.5">Total items</p>
@@ -144,8 +144,46 @@ export default function Inventory() {
         <input type="text" placeholder="Search inventory..." value={search} onChange={(e) => setSearch(e.target.value)} className="input pl-10" />
       </div>
 
+      <div className="space-y-3 md:hidden">
+        {filteredItems.map((item) => {
+          const status = getStatus(item);
+          return (
+            <div key={item.id} className="card p-4">
+              <div className="flex items-start gap-3">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${item.quantity === 0 ? "bg-danger-50" : item.quantity <= item.min ? "bg-warning-50" : "bg-brand-50"}`}>
+                  <FiPackage className={`text-base ${item.quantity === 0 ? "text-danger-500" : item.quantity <= item.min ? "text-warning-500" : "text-brand-500"}`} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-text-primary truncate">{item.name}</p>
+                      <p className="text-xs text-text-muted mt-1">Min threshold: {item.min} {item.unit}</p>
+                    </div>
+                    <span className={status.cls}>{status.label}</span>
+                  </div>
+                  <div className="mt-3 flex items-end justify-between gap-3">
+                    <div>
+                      <p className={`text-xl font-bold ${item.quantity === 0 ? "text-danger-600" : item.quantity <= item.min ? "text-warning-600" : "text-text-primary"}`}>{item.quantity}</p>
+                      <p className="text-xs text-text-muted uppercase tracking-wide">{item.unit}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => adjustQty(item.id, -1)} className="btn-icon w-9 h-9 rounded-xl bg-surface-tertiary text-text-secondary hover:bg-border"><FiMinus className="text-sm" /></button>
+                      <button onClick={() => adjustQty(item.id, 1)} className="btn-icon w-9 h-9 rounded-xl bg-brand-50 text-brand-600 hover:bg-brand-100"><FiPlus className="text-sm" /></button>
+                      <button onClick={() => deleteItem(item.id)} className="btn-icon w-9 h-9 rounded-xl text-text-muted hover:bg-danger-50 hover:text-danger-500"><FiTrash2 className="text-sm" /></button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+        {filteredItems.length === 0 && (
+          <div className="card p-8 text-center text-text-muted">No inventory items found.</div>
+        )}
+      </div>
+
       {/* Table */}
-      <div className="table-container">
+      <div className="hidden md:block table-container">
         <table className="w-full">
           <thead>
             <tr className="table-head">

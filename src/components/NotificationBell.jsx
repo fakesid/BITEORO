@@ -196,7 +196,7 @@ export default function NotificationBell({ onNavigate }) {
 
       {/* Dropdown */}
       {open && (
-        <div className="absolute top-full right-0 mt-2 w-80 bg-surface border border-border-light rounded-xl shadow-modal z-50 overflow-hidden animate-fade-in">
+        <div className="absolute top-full right-0 mt-2 w-[min(20rem,calc(100vw-1rem))] bg-surface border border-border-light rounded-xl shadow-modal z-50 overflow-hidden animate-fade-in">
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-border-light">
             <h3 className="text-sm font-bold text-text-primary">Notifications</h3>
@@ -211,7 +211,7 @@ export default function NotificationBell({ onNavigate }) {
           </div>
 
           {/* Notifications list */}
-          <div className="max-h-80 overflow-y-auto">
+          <div className="max-h-[min(65vh,20rem)] overflow-y-auto">
             {notifications.map((notif) => {
               const isDismissed = dismissed.includes(notif.id);
               if (isDismissed && notif.id !== "all-clear") return null;

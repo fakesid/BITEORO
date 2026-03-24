@@ -87,7 +87,7 @@ function History() {
 
   if (loading) {
     return (
-      <div className="p-6 md:p-8 max-w-6xl mx-auto space-y-6">
+      <div className="p-4 sm:p-6 md:p-8 max-w-6xl mx-auto space-y-6">
         <div className="skeleton h-8 w-48 rounded-lg" />
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => <div key={i} className="skeleton h-28 rounded-2xl" />)}
@@ -98,14 +98,14 @@ function History() {
   }
 
   return (
-    <div className="p-6 md:p-8 max-w-6xl mx-auto">
+    <div className="p-4 sm:p-6 md:p-8 max-w-6xl mx-auto">
       <div className="mb-6">
         <h2 className="page-title">Analytics</h2>
         <p className="text-sm text-text-muted mt-1">Sales performance and trends overview</p>
       </div>
 
       {/* Overview Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {statCards.map((card) => {
           const Icon = card.icon;
           const c = colorMap[card.color];
@@ -133,12 +133,12 @@ function History() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         {/* Sales by Day of Week */}
-        <div className="card p-6">
+        <div className="card p-4 sm:p-6">
           <div className="flex items-center gap-2.5 mb-5">
             <div className="w-8 h-8 rounded-lg bg-info-50 flex items-center justify-center"><FiBarChart2 className="text-info-600 text-sm" /></div>
             <h3 className="section-title !mb-0">Sales by Weekday</h3>
           </div>
-          <ResponsiveContainer width="100%" height={220}>
+          <ResponsiveContainer width="100%" height={210}>
             <BarChart data={salesByWeekday} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
               <XAxis dataKey="name" tick={{ fill: "#94a3b8", fontSize: 12 }} axisLine={false} tickLine={false} />
@@ -150,12 +150,12 @@ function History() {
         </div>
 
         {/* Sales by Day of Month */}
-        <div className="card p-6">
+        <div className="card p-4 sm:p-6">
           <div className="flex items-center gap-2.5 mb-5">
             <div className="w-8 h-8 rounded-lg bg-success-50 flex items-center justify-center"><FiCalendar className="text-success-600 text-sm" /></div>
             <h3 className="section-title !mb-0">Sales by Date</h3>
           </div>
-          <ResponsiveContainer width="100%" height={220}>
+          <ResponsiveContainer width="100%" height={210}>
             <BarChart data={salesByMonthDay} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
               <XAxis dataKey="name" tick={{ fill: "#94a3b8", fontSize: 10 }} axisLine={false} tickLine={false} interval={2} />
@@ -169,16 +169,16 @@ function History() {
 
       {/* Top Selling Items Bar + Component */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <div className="card p-6">
+        <div className="card p-4 sm:p-6">
           <div className="flex items-center gap-2.5 mb-5">
             <div className="w-8 h-8 rounded-lg bg-success-50 flex items-center justify-center"><FiAward className="text-success-600 text-sm" /></div>
             <h3 className="section-title !mb-0">Top Items (Chart)</h3>
           </div>
-          <ResponsiveContainer width="100%" height={280}>
+          <ResponsiveContainer width="100%" height={260}>
             <BarChart data={itemInsights} layout="vertical" margin={{ top: 5, right: 20, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
               <XAxis type="number" tick={{ fill: "#94a3b8", fontSize: 12 }} axisLine={false} tickLine={false} />
-              <YAxis dataKey="name" type="category" width={100} tick={{ fill: "#64748b", fontSize: 12 }} axisLine={false} tickLine={false} />
+              <YAxis dataKey="name" type="category" width={88} tick={{ fill: "#64748b", fontSize: 11 }} axisLine={false} tickLine={false} />
               <Tooltip content={<CustomTooltip />} />
               <Bar dataKey="quantity" fill="#10B981" radius={[0, 6, 6, 0]} />
             </BarChart>

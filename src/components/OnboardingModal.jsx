@@ -135,7 +135,7 @@ export default function OnboardingModal({ onComplete }) {
       </div>
 
       {/* Quick-add form */}
-      <div className="mt-6 flex gap-2">
+      <div className="mt-6 grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_7rem_auto] gap-2">
         <input
           type="text"
           placeholder="Item name (e.g. Masala Chai)"
@@ -151,13 +151,13 @@ export default function OnboardingModal({ onComplete }) {
           value={itemPrice}
           onChange={(e) => setItemPrice(e.target.value)}
           onKeyDown={handleKeyDown}
-          className="input w-28 py-2.5"
+          className="input py-2.5"
           min="0"
         />
         <button
           onClick={addItem}
           disabled={!itemName.trim() || !itemPrice || adding}
-          className="btn-primary px-4 py-2.5 shrink-0"
+          className="btn-primary px-4 py-2.5 shrink-0 justify-center"
         >
           <FiPlus />
         </button>
@@ -196,11 +196,11 @@ export default function OnboardingModal({ onComplete }) {
       )}
 
       {/* Actions */}
-      <div className="flex items-center justify-between mt-6">
+      <div className="flex items-center justify-between mt-6 gap-3">
         <button onClick={goBack} className="btn-ghost text-sm px-4 py-2">
           <FiArrowLeft className="mr-1" /> Back
         </button>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 shrink-0">
           <button onClick={skip} className="text-sm text-text-muted hover:text-text-secondary transition-colors">
             Skip
           </button>
@@ -245,8 +245,8 @@ export default function OnboardingModal({ onComplete }) {
   const stepContent = [welcomeStep, menuStep, doneStep];
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in">
-      <div className="bg-surface rounded-2xl shadow-modal w-full max-w-lg mx-4 overflow-hidden animate-scale-in">
+    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in">
+      <div className="bg-surface rounded-t-[1.75rem] sm:rounded-2xl shadow-modal w-full h-[92dvh] sm:h-auto sm:max-h-[90dvh] max-w-lg mx-0 sm:mx-4 overflow-hidden animate-scale-in flex flex-col">
         {/* Progress bar */}
         <div className="h-1 bg-surface-tertiary">
           <div
@@ -270,7 +270,7 @@ export default function OnboardingModal({ onComplete }) {
 
         {/* Content */}
         <div
-          className={`px-6 sm:px-8 py-6 transition-all duration-300 ${
+          className={`px-4 sm:px-8 py-5 sm:py-6 transition-all duration-300 overflow-y-auto ${
             animate ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
           }`}
         >

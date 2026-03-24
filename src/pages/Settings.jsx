@@ -136,7 +136,7 @@ export default function Settings() {
   }
 
   return (
-    <div className="p-6 md:p-8 max-w-3xl mx-auto">
+    <div className="p-4 sm:p-6 md:p-8 max-w-3xl mx-auto">
       {/* Header */}
       <div className="mb-8">
         <h1 className="page-title">Settings</h1>
@@ -147,7 +147,7 @@ export default function Settings() {
 
       <div className="space-y-8">
         {/* ─── Restaurant Profile ─────────────────────── */}
-        <section className="card p-6">
+        <section className="card p-4 sm:p-6">
           <div className="flex items-center gap-3 mb-5">
             <div className="w-10 h-10 rounded-xl bg-brand-50 text-brand-500 flex items-center justify-center shrink-0">
               <FiUser className="text-lg" />
@@ -203,7 +203,7 @@ export default function Settings() {
         </section>
 
         {/* ─── Billing & Tax ──────────────────────────── */}
-        <section className="card p-6">
+        <section className="card p-4 sm:p-6">
           <div className="flex items-center gap-3 mb-5">
             <div className="w-10 h-10 rounded-xl bg-success-50 text-success-500 flex items-center justify-center shrink-0">
               <FiDollarSign className="text-lg" />
@@ -282,11 +282,11 @@ export default function Settings() {
         </section>
 
         {/* ─── Save Button ────────────────────────────── */}
-        <div className="flex justify-end">
+        <div className="flex justify-stretch sm:justify-end">
           <button
             onClick={saveSettings}
             disabled={saving}
-            className="btn-primary px-6 py-2.5 text-sm font-medium"
+            className="btn-primary w-full sm:w-auto px-6 py-2.5 text-sm font-medium"
           >
             {saving ? (
               <span className="flex items-center gap-2">
@@ -303,7 +303,7 @@ export default function Settings() {
         </div>
 
         {/* ─── Account Section ────────────────────────── */}
-        <section className="card p-6">
+        <section className="card p-4 sm:p-6">
           <div className="flex items-center gap-3 mb-5">
             <div className="w-10 h-10 rounded-xl bg-info-50 text-info-500 flex items-center justify-center shrink-0">
               <FiFileText className="text-lg" />
@@ -372,10 +372,7 @@ export default function Settings() {
               </p>
             )}
 
-            <button
-              onClick={handleChangePassword}
-              className="mt-3 btn-ghost text-sm px-4 py-2 border border-border hover:bg-surface-secondary"
-            >
+            <button onClick={handleChangePassword} className="mt-3 btn-secondary btn-md">
               Update Password
             </button>
           </div>
@@ -384,9 +381,9 @@ export default function Settings() {
 
       {/* Toast */}
       {toast.message && (
-        <div className="fixed bottom-6 right-6 z-50 animate-fade-in">
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 sm:left-auto sm:right-6 sm:translate-x-0 z-50 animate-fade-in px-4 sm:px-0 w-full sm:w-auto">
           <div
-            className={`flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg text-sm font-medium ${
+            className={`flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg text-sm font-medium w-full sm:w-auto justify-center ${
               toast.type === "success"
                 ? "bg-success-50 text-success-700 border border-success-200"
                 : "bg-danger-50 text-danger-700 border border-danger-200"

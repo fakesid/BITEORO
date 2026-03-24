@@ -109,7 +109,7 @@ function App() {
   }
 
   return (
-    <div className="flex h-screen bg-surface-secondary text-text-primary overflow-hidden">
+    <div className="flex min-h-screen h-[100dvh] bg-surface-secondary text-text-primary overflow-hidden">
       {/* Onboarding modal */}
       {showOnboarding && onboardingChecked && (
         <OnboardingModal onComplete={() => setShowOnboarding(false)} />
@@ -128,7 +128,7 @@ function App() {
         className={`fixed xl:static z-50 h-full bg-surface border-r border-border flex flex-col transition-all duration-300 ease-in-out ${
           sidebarCollapsed ? "xl:w-[70px]" : "xl:w-[240px]"
         } ${
-          mobileSidebarOpen ? "translate-x-0 w-[260px]" : "-translate-x-full xl:translate-x-0 w-[260px]"
+          mobileSidebarOpen ? "translate-x-0 w-[82vw] max-w-[260px]" : "-translate-x-full xl:translate-x-0 w-[82vw] max-w-[260px]"
         }`}
       >
         {/* Logo */}
@@ -156,6 +156,7 @@ function App() {
               icon={tab.icon}
               name={tab.name}
               active={activeTab === tab.name}
+              collapsed={sidebarCollapsed}
               onClick={() => setActiveTab(tab.name)}
             />
           ))}
@@ -185,11 +186,11 @@ function App() {
       {/* Main panel */}
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         {/* Topbar */}
-        <header className="h-16 flex items-center gap-3 px-4 lg:px-6 border-b border-border bg-surface shrink-0">
+        <header className="flex min-h-16 flex-wrap items-center gap-3 px-3 py-3 sm:px-4 lg:px-6 border-b border-border bg-surface shrink-0">
           {/* Mobile menu button */}
           <button
             onClick={() => setMobileSidebarOpen(true)}
-            className="xl:hidden btn-ghost p-2 rounded-lg"
+            className="xl:hidden btn-ghost p-2 rounded-lg shrink-0"
           >
             <FiMenu className="text-lg" />
           </button>
@@ -198,10 +199,10 @@ function App() {
           <GlobalSearch onNavigate={(tab) => setActiveTab(tab)} />
 
           {/* Spacer to push right actions to the edge */}
-          <div className="flex-1" />
+          <div className="hidden sm:block flex-1" />
 
           {/* Right actions */}
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="ml-auto flex items-center gap-1 sm:gap-2 shrink-0">
             <NotificationBell onNavigate={(tab) => setActiveTab(tab)} />
             <div className="hidden sm:flex items-center gap-3 ml-2 pl-3 border-l border-border relative" ref={profileRef}>
               <button
@@ -262,7 +263,7 @@ function App() {
         </header>
 
         {/* Main content */}
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto overscroll-contain">
           <div className="animate-fade-in">
             {currentTab?.component || <div className="p-8 text-text-muted">Coming soon...</div>}
           </div>

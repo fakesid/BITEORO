@@ -140,15 +140,16 @@ export default function LandingPage({ onLogin, onSignUp }) {
           <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={onLogin}
-              className="text-sm font-medium text-text-secondary hover:text-text-primary transition-colors px-3 py-2"
+              className="text-sm font-medium text-text-secondary hover:text-text-primary transition-colors px-2 sm:px-3 py-2"
             >
               Log in
             </button>
             <button
               onClick={onSignUp}
-              className="btn-primary text-sm px-4 py-2"
+              className="btn-primary text-sm px-3 sm:px-4 py-2"
             >
-              Get started free
+              <span className="sm:hidden">Get started</span>
+              <span className="hidden sm:inline">Get started free</span>
             </button>
           </div>
         </div>
@@ -217,7 +218,7 @@ export default function LandingPage({ onLogin, onSignUp }) {
               </div>
               {/* Mock dashboard content */}
               <div className="p-6 lg:p-8 bg-surface-secondary">
-                <div className="grid grid-cols-4 gap-4 mb-6">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
                   {[
                     { label: "Orders Today", val: "47", cls: "text-brand-600" },
                     { label: "Revenue", val: "₹12,450", cls: "text-success-600" },
@@ -230,8 +231,8 @@ export default function LandingPage({ onLogin, onSignUp }) {
                     </div>
                   ))}
                 </div>
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="col-span-2 bg-surface rounded-xl border border-border-light p-4 h-40">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="sm:col-span-2 bg-surface rounded-xl border border-border-light p-4 h-40">
                     {/* Fake chart bars */}
                     <p className="text-xs font-medium text-text-secondary mb-3">Sales this week</p>
                     <div className="flex items-end gap-2 h-24">

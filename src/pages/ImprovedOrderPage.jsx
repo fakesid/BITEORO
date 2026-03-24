@@ -85,11 +85,18 @@ function ImprovedOrderPage({ onOrderPlaced }) {
   ];
 
   return (
-    <div className="flex flex-col md:flex-row h-[85vh] max-h-[700px]">
+    <div className="flex h-full min-h-0 flex-col lg:flex-row lg:h-[85vh] lg:max-h-[700px]">
       {/* Left: Menu browser */}
-      <div className="flex-1 flex flex-col p-6 border-r border-border-light">
-        <div className="mb-4">
-          <h2 className="text-xl font-bold text-text-primary mb-3">New Order</h2>
+      <div className="flex-1 flex min-h-0 flex-col p-4 sm:p-6 lg:border-r border-border-light">
+        <div className="mb-4 shrink-0">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-xl font-bold text-text-primary">New Order</h2>
+              <p className="text-sm text-text-muted mt-1">Search the menu and build the cart.</p>
+            </div>
+            <div className="badge-brand self-start sm:self-auto">{cart.length} items</div>
+          </div>
+          <div className="mt-3 relative">
           <div className="relative">
             <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted" />
             <input
@@ -102,7 +109,8 @@ function ImprovedOrderPage({ onOrderPlaced }) {
             />
           </div>
         </div>
-        <div className="flex-1 overflow-y-auto space-y-2 pr-1">
+        </div>
+        <div className="flex-1 overflow-y-auto space-y-2 pr-1 min-h-[220px]">
           {filteredItems.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <p className="text-text-muted text-sm">No items found</p>
@@ -137,13 +145,16 @@ function ImprovedOrderPage({ onOrderPlaced }) {
       </div>
 
       {/* Right: Cart & checkout */}
-      <div className="w-full md:w-[360px] flex flex-col p-6 bg-surface-secondary/50">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold text-text-primary">Cart</h3>
-          <span className="badge-brand">{cart.length} items · ₹{getTotal()}</span>
+      <div className="w-full lg:w-[360px] flex min-h-0 flex-col border-t lg:border-t-0 lg:border-l border-border-light bg-surface-secondary/50">
+        <div className="flex items-center justify-between px-4 pt-4 sm:px-6 sm:pt-6 mb-4 shrink-0">
+          <div>
+            <h3 className="text-lg font-bold text-text-primary">Cart</h3>
+            <p className="text-xs text-text-muted mt-0.5">Review items and complete checkout.</p>
+          </div>
+          <span className="badge-brand shrink-0">₹{getTotal()}</span>
         </div>
 
-        <div className="flex-1 overflow-y-auto space-y-2 mb-4">
+        <div className="flex-1 overflow-y-auto space-y-2 px-4 sm:px-6 mb-4 min-h-[140px] max-h-[28vh] lg:max-h-none">
           {cart.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <p className="text-sm text-text-muted">Add items from the menu</p>
@@ -165,12 +176,12 @@ function ImprovedOrderPage({ onOrderPlaced }) {
         </div>
 
         {cart.length > 0 && (
-          <button onClick={clearCart} className="btn-sm btn-ghost text-danger-500 hover:bg-danger-50 mb-3 w-full justify-center">
+          <button onClick={clearCart} className="btn-sm btn-ghost text-danger-500 hover:bg-danger-50 mb-3 mx-4 sm:mx-6 w-auto justify-center">
             Clear cart
           </button>
         )}
 
-        <form className="space-y-3 border-t border-border-light pt-4" onSubmit={e => { e.preventDefault(); placeOrder(); }}>
+        <form className="space-y-3 border-t border-border-light pt-4 px-4 pb-4 sm:px-6 sm:pb-6 shrink-0 bg-surface-secondary/80 backdrop-blur-sm" onSubmit={e => { e.preventDefault(); placeOrder(); }}>
           <div className="relative">
             <FiUser className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-sm" />
             <input type="text" placeholder="Customer name (optional)" value={customerName} onChange={(e) => setCustomerName(e.target.value)} className="input pl-9 py-2 text-sm" />
@@ -183,13 +194,13 @@ function ImprovedOrderPage({ onOrderPlaced }) {
               maxLength={10}
             />
           </div>
-          <div className="flex gap-2">
+          <div className="grid grid-cols-3 gap-2">
             {paymentOptions.map((opt) => (
               <button
                 key={opt.value}
                 type="button"
                 onClick={() => setPaymentMode(opt.value)}
-                className={`flex-1 py-2 rounded-xl text-sm font-medium border transition-all duration-200 ${
+                className={`py-2 rounded-xl text-sm font-medium border transition-all duration-200 ${
                   paymentMode === opt.value
                     ? "bg-brand-50 border-brand-200 text-brand-600"
                     : "bg-surface border-border text-text-muted hover:border-text-disabled"

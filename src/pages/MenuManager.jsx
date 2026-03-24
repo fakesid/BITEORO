@@ -84,20 +84,20 @@ function MenuManager() {
   };
 
   return (
-    <div className="p-6 md:p-8 max-w-6xl mx-auto">
+    <div className="p-4 sm:p-6 md:p-8 max-w-6xl mx-auto">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
           <h2 className="page-title">Menu Manager</h2>
           <p className="text-sm text-text-muted mt-1">Manage your restaurant menu items</p>
         </div>
-        <button onClick={() => setShowAddForm(!showAddForm)} className="btn-primary btn-lg">
+        <button onClick={() => setShowAddForm(!showAddForm)} className="btn-primary btn-lg w-full sm:w-auto justify-center">
           <FiPlus className="mr-1.5" /> Add item
         </button>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <div className="card p-4 text-center">
           <p className="text-2xl font-bold text-text-primary">{total}</p>
           <p className="text-xs text-text-muted mt-0.5">Total items</p>
@@ -145,8 +145,58 @@ function MenuManager() {
         <input type="text" placeholder="Search menu items..." value={search} onChange={(e) => setSearch(e.target.value)} className="input pl-10" />
       </div>
 
+      <div className="space-y-3 md:hidden">
+        {filteredItems.map((item) => (
+          <div key={item.id} className="card p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3 min-w-0 flex-1">
+                <div className="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center shrink-0">
+                  <FiPackage className="text-brand-500 text-base" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  {editingItemId === item.id ? (
+                    <div className="space-y-3">
+                      <input type="text" value={item.name} onChange={(e) => setMenuItems((prev) => prev.map((i) => i.id === item.id ? { ...i, name: e.target.value } : i))} className="input" />
+                      <input type="number" value={item.price} onChange={(e) => setMenuItems((prev) => prev.map((i) => i.id === item.id ? { ...i, price: e.target.value } : i))} className="input" />
+                      <button type="button" onClick={() => setMenuItems((prev) => prev.map((i) => i.id === item.id ? { ...i, inStock: !i.inStock } : i))} className={`w-full py-2.5 rounded-xl text-sm font-medium border transition-all ${item.inStock ? "bg-success-50 border-success-200 text-success-700" : "bg-danger-50 border-danger-200 text-danger-700"}`}>
+                        {item.inStock ? "In Stock" : "Out of Stock"}
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-sm font-semibold text-text-primary truncate">{item.name}</p>
+                      <div className="flex items-center gap-2 mt-1 flex-wrap">
+                        <span className="text-sm font-medium text-text-primary">{String.fromCharCode(8377)}{item.price}</span>
+                        {item.inStock ? <span className="badge-success">In Stock</span> : <span className="badge-danger">Out of Stock</span>}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 flex items-center gap-2">
+              {editingItemId === item.id ? (
+                <>
+                  <button onClick={() => handleUpdate(item.id, item)} className="btn-success btn-md flex-1 justify-center"><FiCheck /> Save</button>
+                  <button onClick={() => setEditingItemId(null)} className="btn-secondary btn-md flex-1 justify-center"><FiX /> Cancel</button>
+                </>
+              ) : (
+                <>
+                  <button onClick={() => setEditingItemId(item.id)} className="btn-secondary btn-md flex-1 justify-center"><FiEdit2 /> Edit</button>
+                  <button onClick={() => handleDelete(item.id)} className="btn-danger btn-md flex-1 justify-center"><FiTrash2 /> Delete</button>
+                </>
+              )}
+            </div>
+          </div>
+        ))}
+        {filteredItems.length === 0 && (
+          <div className="card p-8 text-center text-text-muted">No menu items found.</div>
+        )}
+      </div>
+
       {/* Table */}
-      <div className="table-container">
+      <div className="hidden md:block table-container">
         <table className="w-full">
           <thead>
             <tr className="table-head">

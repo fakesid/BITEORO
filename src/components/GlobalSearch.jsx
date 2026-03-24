@@ -233,7 +233,7 @@ export default function GlobalSearch({ onNavigate }) {
   });
 
   return (
-    <div ref={containerRef} className="flex-1 max-w-md relative">
+    <div ref={containerRef} className="relative order-last basis-full sm:order-none sm:basis-auto flex-1 min-w-[220px] sm:max-w-md">
       {/* Search input */}
       <div className="relative">
         <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
@@ -245,7 +245,7 @@ export default function GlobalSearch({ onNavigate }) {
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => setOpen(true)}
           onKeyDown={handleKeyDown}
-          className="input pl-9 pr-20 py-2 bg-surface-secondary border-transparent focus:bg-surface focus:border-border w-full"
+          className="input pl-9 pr-12 sm:pr-20 py-2 bg-surface-secondary border-transparent focus:bg-surface focus:border-border w-full"
         />
         {/* Shortcut hint */}
         {!open && !query && (
@@ -271,7 +271,7 @@ export default function GlobalSearch({ onNavigate }) {
 
       {/* Results dropdown */}
       {open && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-surface border border-border-light rounded-xl shadow-modal z-50 overflow-hidden animate-fade-in">
+        <div className="absolute top-full left-0 right-0 mt-2 bg-surface border border-border-light rounded-xl shadow-modal z-50 overflow-hidden animate-fade-in max-h-[min(70vh,32rem)]">
           {/* Loading state */}
           {loading && (
             <div className="flex items-center gap-2 px-4 py-3 text-sm text-text-muted">
@@ -282,7 +282,7 @@ export default function GlobalSearch({ onNavigate }) {
 
           {/* Results list */}
           {!loading && cappedResults.length > 0 && (
-            <div className="max-h-80 overflow-y-auto py-1">
+            <div className="max-h-[min(56vh,20rem)] overflow-y-auto py-1">
               {grouped.map((item, idx) => {
                 if (item.type === "header") {
                   return (
@@ -345,7 +345,7 @@ export default function GlobalSearch({ onNavigate }) {
           )}
 
           {/* Footer hint */}
-          <div className="border-t border-border-light px-4 py-2 flex items-center gap-4 text-2xs text-text-disabled">
+          <div className="hidden sm:flex border-t border-border-light px-4 py-2 items-center gap-4 text-2xs text-text-disabled">
             <span className="flex items-center gap-1">
               <kbd className="px-1 py-0.5 bg-surface-tertiary border border-border-light rounded text-2xs">↑↓</kbd>
               Navigate
