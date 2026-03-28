@@ -147,3 +147,27 @@
     @apply bg-surface-tertiary rounded-lg animate-pulse;
   }
 }
+
+/* LIGHT THEME (default) */
+:root {
+  --surface: #ffffff;
+  --surface-secondary: #f8fafc;
+  --surface-tertiary: #f1f5f9;
+
+  --text-primary: #0f172a;
+  --text-muted: #64748b;
+
+  --border: #e2e8f0;
+}
+
+/* DARK THEME */
+.dark {
+  --surface: #0b1220;
+  --surface-secondary: #111827;
+  --surface-tertiary: #1f2937;
+
+  --text-primary: #f9fafb;
+  --text-muted: #9ca3af;
+
+  --border: #374151;
+}
