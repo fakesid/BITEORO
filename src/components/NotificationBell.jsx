@@ -25,7 +25,7 @@ export default function NotificationBell({ onNavigate }) {
   });
   const ref = useRef(null);
 
-  // Close on click outside
+  // Click outside to close logic
   useEffect(() => {
     function handleClick(e) {
       if (ref.current && !ref.current.contains(e.target)) setOpen(false);
@@ -34,7 +34,7 @@ export default function NotificationBell({ onNavigate }) {
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  // Listen to menu + inventory + orders for live notifications
+  // Firebase Real-time logic
   useEffect(() => {
     if (!user) return;
     let menuItems = [];
@@ -43,109 +43,66 @@ export default function NotificationBell({ onNavigate }) {
 
     function buildNotifications() {
       const notifs = [];
-
-      // Out of stock menu items
+      // Out of Stock Menu
       const outOfStock = menuItems.filter((i) => i.inStock === false);
       if (outOfStock.length > 0) {
         notifs.push({
           id: "menu-oos",
           type: "danger",
           icon: <FiAlertOctagon />,
-          title: `${outOfStock.length} menu item${outOfStock.length > 1 ? "s" : ""} out of stock`,
-          detail: outOfStock.slice(0, 3).map((i) => i.name).join(", ") + (outOfStock.length > 3 ? ` +${outOfStock.length - 3} more` : ""),
+          title: `${outOfStock.length} items out of stock`,
+          detail: outOfStock.slice(0, 2).map((i) => i.name).join(", "),
           action: "Menu",
-          time: "Now",
         });
       }
-
-      // Low stock inventory
+      // Low Stock Inventory
       const lowStock = inventoryItems.filter((i) => i.quantity > 0 && i.quantity <= (i.min || 5));
       if (lowStock.length > 0) {
         notifs.push({
           id: "inv-low",
           type: "warning",
           icon: <FiAlertTriangle />,
-          title: `${lowStock.length} inventory item${lowStock.length > 1 ? "s" : ""} running low`,
-          detail: lowStock.slice(0, 3).map((i) => `${i.name} (${i.quantity} ${i.unit || "pcs"})`).join(", "),
+          title: "Inventory running low",
+          detail: `${lowStock.length} items need restock`,
           action: "Inventory",
-          time: "Now",
         });
       }
-
-      // Out of stock inventory (quantity === 0)
-      const outOfStockInv = inventoryItems.filter((i) => i.quantity === 0);
-      if (outOfStockInv.length > 0) {
-        notifs.push({
-          id: "inv-oos",
-          type: "danger",
-          icon: <FiPackage />,
-          title: `${outOfStockInv.length} inventory item${outOfStockInv.length > 1 ? "s" : ""} depleted`,
-          detail: outOfStockInv.slice(0, 3).map((i) => i.name).join(", ") + (outOfStockInv.length > 3 ? ` +${outOfStockInv.length - 3} more` : ""),
-          action: "Inventory",
-          time: "Now",
-        });
-      }
-
-      // Unpaid orders today
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const todayOrders = orders.filter((o) => {
-        const created = o.createdAt?.toDate?.() || new Date(o.createdAt);
-        return (
-          created.getFullYear() === today.getFullYear() &&
-          created.getMonth() === today.getMonth() &&
-          created.getDate() === today.getDate()
-        );
-      });
-      const unpaid = todayOrders.filter((o) => !o.paid);
+      // Unpaid Orders
+      const unpaid = orders.filter((o) => !o.paid);
       if (unpaid.length > 0) {
-        const unpaidTotal = unpaid.reduce((sum, o) => sum + (o.total || 0), 0);
         notifs.push({
           id: "orders-unpaid",
           type: "info",
           icon: <FiDollarSign />,
-          title: `${unpaid.length} unpaid order${unpaid.length > 1 ? "s" : ""} today`,
-          detail: `₹${unpaidTotal.toLocaleString()} pending collection`,
+          title: "Unpaid orders",
+          detail: `${unpaid.length} payments pending`,
           action: "Dashboard",
-          time: "Today",
         });
       }
-
-      // All clear notification
+      // Default clear message
       if (notifs.length === 0) {
-        notifs.push({
-          id: "all-clear",
-          type: "success",
-          icon: <FiCheck />,
-          title: "All clear!",
-          detail: "No issues to report right now",
-          action: null,
-          time: "Now",
-        });
+        notifs.push({ id: "all-clear", type: "success", icon: <FiCheck />, title: "All clear!", detail: "No new alerts", action: null });
       }
-
       setNotifications(notifs);
     }
 
     const unsubMenu = onSnapshot(collection(db, "users", user.uid, "menu"), (snap) => {
-      menuItems = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      menuItems = snap.docs.map((d) => d.data());
       buildNotifications();
     });
-
     const unsubInv = onSnapshot(collection(db, "users", user.uid, "inventory"), (snap) => {
-      inventoryItems = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      inventoryItems = snap.docs.map((d) => d.data());
       buildNotifications();
     });
-
     const unsubOrders = onSnapshot(collection(db, "users", user.uid, "orders"), (snap) => {
-      orders = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      orders = snap.docs.map((d) => d.data());
       buildNotifications();
     });
 
     return () => { unsubMenu(); unsubInv(); unsubOrders(); };
   }, [user]);
 
-  // Persist dismissed
+  // Persist dismissed logic
   useEffect(() => {
     localStorage.setItem("biteoro_dismissed_notifs", JSON.stringify(dismissed));
   }, [dismissed]);
@@ -153,64 +110,36 @@ export default function NotificationBell({ onNavigate }) {
   const activeNotifs = notifications.filter((n) => !dismissed.includes(n.id) && n.id !== "all-clear");
   const count = activeNotifs.length;
 
-  const dismiss = (id) => {
-    setDismissed((prev) => [...prev, id]);
-  };
-
-  const clearAll = () => {
-    setDismissed(notifications.map((n) => n.id));
-  };
-
-  // Reset dismissed daily
-  useEffect(() => {
-    const lastReset = localStorage.getItem("biteoro_notif_reset_date");
-    const todayStr = new Date().toDateString();
-    if (lastReset !== todayStr) {
-      setDismissed([]);
-      localStorage.setItem("biteoro_notif_reset_date", todayStr);
-    }
-  }, []);
-
   const typeStyles = {
-    danger: { bg: "bg-danger-50", text: "text-danger-600", dot: "bg-danger-500" },
-    warning: { bg: "bg-warning-50", text: "text-warning-600", dot: "bg-warning-500" },
-    info: { bg: "bg-info-50", text: "text-info-600", dot: "bg-info-500" },
-    success: { bg: "bg-success-50", text: "text-success-600", dot: "bg-success-500" },
+    danger: { bg: "bg-red-50 dark:bg-red-900/20", text: "text-red-600 dark:text-red-400" },
+    warning: { bg: "bg-amber-50 dark:bg-amber-900/20", text: "text-amber-600 dark:text-amber-400" },
+    info: { bg: "bg-blue-50 dark:bg-blue-900/20", text: "text-blue-600 dark:text-blue-400" },
+    success: { bg: "bg-green-50 dark:bg-green-900/20", text: "text-green-600 dark:text-green-400" },
   };
 
   return (
     <div className="relative" ref={ref}>
-      {/* Bell button */}
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="btn-ghost p-2 rounded-lg relative"
-        title="Notifications"
+      {/* TRIGGER: Combined Styling */}
+      <button 
+        onClick={() => setOpen(!open)}
+        className="relative p-1.5 sm:p-2 rounded-lg hover:bg-surface-secondary dark:hover:bg-gray-700 transition-colors group"
       >
-        <FiBell className={`text-lg ${count > 0 ? "text-text-primary" : "text-text-muted"}`} />
+        <FiBell className={`text-base sm:text-lg transition-colors ${count > 0 ? "text-brand-500" : "text-gray-500 dark:text-gray-400"}`} />
         {count > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 w-4.5 h-4.5 min-w-[18px] px-1 flex items-center justify-center text-[10px] font-bold text-white bg-danger-500 rounded-full leading-none animate-scale-in">
-            {count}
-          </span>
+          <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse border-2 border-white dark:border-gray-800" />
         )}
       </button>
 
-      {/* Dropdown */}
+      {/* DROPDOWN: Rich Content */}
       {open && (
-        <div className="absolute top-full right-0 mt-2 w-80 bg-surface border border-border-light rounded-xl shadow-modal z-50 overflow-hidden animate-fade-in">
-          {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-border-light">
-            <h3 className="text-sm font-bold text-text-primary">Notifications</h3>
+        <div className="absolute top-full right-0 mt-3 w-72 sm:w-80 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500">Notifications</h3>
             {count > 0 && (
-              <button
-                onClick={clearAll}
-                className="text-2xs font-medium text-text-muted hover:text-text-secondary transition-colors"
-              >
-                Dismiss all
-              </button>
+              <button onClick={() => setDismissed(notifications.map(n => n.id))} className="text-xs text-brand-500 hover:underline">Clear all</button>
             )}
           </div>
 
-          {/* Notifications list */}
           <div className="max-h-80 overflow-y-auto">
             {notifications.map((notif) => {
               const isDismissed = dismissed.includes(notif.id);
@@ -218,48 +147,22 @@ export default function NotificationBell({ onNavigate }) {
               const style = typeStyles[notif.type] || typeStyles.info;
 
               return (
-                <div
+                <div 
                   key={notif.id}
-                  className={`flex items-start gap-3 px-4 py-3 border-b border-border-light last:border-0 transition-colors ${
-                    notif.action ? "cursor-pointer hover:bg-surface-secondary" : ""
-                  } ${isDismissed ? "opacity-50" : ""}`}
-                  onClick={() => {
-                    if (notif.action && onNavigate) {
-                      onNavigate(notif.action);
-                      setOpen(false);
-                    }
-                  }}
+                  className={`flex items-start gap-3 p-4 border-b border-gray-50 dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer`}
+                  onClick={() => { if(notif.action) { onNavigate(notif.action); setOpen(false); } }}
                 >
-                  {/* Icon */}
-                  <div className={`w-9 h-9 rounded-lg ${style.bg} ${style.text} flex items-center justify-center shrink-0 mt-0.5`}>
-                    {notif.icon}
-                  </div>
-
-                  {/* Content */}
+                  <div className={`p-2 rounded-lg ${style.bg} ${style.text}`}>{notif.icon}</div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-text-primary leading-snug">{notif.title}</p>
-                    <p className="text-2xs text-text-muted mt-0.5 truncate">{notif.detail}</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-2xs text-text-disabled">{notif.time}</span>
-                      {notif.action && (
-                        <span className={`text-2xs font-medium ${style.text}`}>
-                          Go to {notif.action} →
-                        </span>
-                      )}
-                    </div>
+                    <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">{notif.title}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{notif.detail}</p>
                   </div>
-
-                  {/* Dismiss button */}
-                  {notif.id !== "all-clear" && !isDismissed && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        dismiss(notif.id);
-                      }}
-                      className="shrink-0 mt-1 text-text-disabled hover:text-text-muted transition-colors"
-                      title="Dismiss"
+                  {notif.id !== "all-clear" && (
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); setDismissed([...dismissed, notif.id]); }}
+                      className="text-gray-300 hover:text-gray-500"
                     >
-                      <FiXCircle className="w-4 h-4" />
+                      <FiXCircle size={14} />
                     </button>
                   )}
                 </div>

@@ -1,8 +1,11 @@
-import { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { db } from "../firebase";
 import { collection, onSnapshot, doc, updateDoc } from "firebase/firestore";
 import { useAuth } from "../context/AuthContext";
-import { FiSearch, FiChevronDown, FiChevronUp, FiUser, FiPhone, FiStar, FiAlertCircle, FiCreditCard, FiShoppingBag, FiEdit2 } from "react-icons/fi";
+import { 
+  FiSearch, FiChevronDown, FiChevronUp, FiUser, FiPhone, 
+  FiStar, FiAlertCircle, FiCreditCard, FiShoppingBag, FiEdit2, FiCalendar 
+} from "react-icons/fi";
 
 export default function Customers() {
   const { user } = useAuth();
@@ -11,186 +14,226 @@ export default function Customers() {
   const [sortBy, setSortBy] = useState("lastSeen");
   const [search, setSearch] = useState("");
 
-  const ordersCollection = user ? collection(db, "users", user.uid, "orders") : null;
-
+  // Logic: Firebase Data Fetching
   useEffect(() => {
     if (!user) return;
-    const unsub = onSnapshot(ordersCollection, (snapshot) => {
+    const unsub = onSnapshot(collection(db, "users", user.uid, "orders"), (snapshot) => {
       setOrders(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
     });
     return () => unsub();
-  }, [user]); // eslint-disable-line
+  }, [user]);
 
-  const customers = useMemo(() => {
+  // Logic: Grouping Orders into Customers
+  const customersData = useMemo(() => {
     const acc = {};
-    for (const order of orders) {
+    orders.forEach((order) => {
       const phone = order.customerPhone || "Unknown";
-      if (!acc[phone]) acc[phone] = { phone, name: order.customerName || "", orders: [], total: 0, lastSeen: null, itemCounts: {} };
+      if (!acc[phone]) {
+        acc[phone] = { 
+          phone, 
+          name: order.customerName || "Guest Customer", 
+          orders: [], 
+          total: 0, 
+          lastSeen: null, 
+          itemCounts: {} 
+        };
+      }
       acc[phone].orders.push(order);
-      acc[phone].total += order.total || 0;
+      acc[phone].total += (order.total || 0);
       acc[phone].lastSeen = order.createdAt;
-      (order.items || []).forEach((item) => { acc[phone].itemCounts[item.name] = (acc[phone].itemCounts[item.name] || 0) + (item.quantity || 1); });
-    }
+      (order.items || []).forEach((item) => {
+        acc[phone].itemCounts[item.name] = (acc[phone].itemCounts[item.name] || 0) + (item.quantity || 1);
+      });
+    });
     return acc;
   }, [orders]);
 
-  const getMostOrderedItem = (itemCounts) => {
-    let max = 0, name = "";
-    for (const k in itemCounts) { if (itemCounts[k] > max) { max = itemCounts[k]; name = k; } }
-    return name && max ? name + " (" + max + ")" : "\u2014";
-  };
-
   const filteredCustomers = useMemo(() => {
-    let arr = Object.values(customers);
-    if (search) arr = arr.filter(c => (c.name && c.name.toLowerCase().includes(search.toLowerCase())) || (c.phone && c.phone.includes(search)));
-    switch (sortBy) {
-      case "total": arr.sort((a, b) => b.total - a.total); break;
-      case "orders": arr.sort((a, b) => b.orders.length - a.orders.length); break;
-      case "lastSeen": arr.sort((a, b) => (b.lastSeen?.seconds || 0) - (a.lastSeen?.seconds || 0)); break;
-      case "name": arr.sort((a, b) => (a.name || "").localeCompare(b.name || "")); break;
-      default: break;
+    let arr = Object.values(customersData);
+    if (search) {
+      arr = arr.filter(c => 
+        c.name.toLowerCase().includes(search.toLowerCase()) || 
+        c.phone.includes(search)
+      );
     }
-    return arr;
-  }, [customers, sortBy, search]);
+    const sortFns = {
+      total: (a, b) => b.total - a.total,
+      orders: (a, b) => b.orders.length - a.orders.length,
+      lastSeen: (a, b) => (b.lastSeen?.seconds || 0) - (a.lastSeen?.seconds || 0),
+      name: (a, b) => a.name.localeCompare(b.name)
+    };
+    return arr.sort(sortFns[sortBy] || sortFns.lastSeen);
+  }, [customersData, sortBy, search]);
 
-  const totalCustomers = Object.keys(customers).length;
-
-  const toggleOrderPaid = async (orderId, current) => {
-    if (!user) return;
-    try {
-      await updateDoc(doc(db, "users", user.uid, "orders", orderId), { paid: !current });
-    } catch (e) {
-      console.error("Failed to update order status", e);
-    }
+  // UI Helper: Get favorite item
+  const getFavorite = (counts) => {
+    let max = 0, name = "";
+    for (const k in counts) { if (counts[k] > max) { max = counts[k]; name = k; } }
+    return name || "None";
   };
-  const totalSpent = Object.values(customers).reduce((sum, c) => sum + c.total, 0);
-  const frequent = filteredCustomers[0];
+
+  const totalSpent = Object.values(customersData).reduce((sum, c) => sum + c.total, 0);
 
   return (
-    <div className="p-6 md:p-8 max-w-6xl mx-auto">
-      <div className="mb-6">
-        <h2 className="page-title">Customers</h2>
-        <p className="text-sm text-text-muted mt-1">Customer directory built from your order history</p>
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-text-primary dark:text-white">Customer Directory</h1>
+          <p className="text-sm text-text-muted mt-1">Manage relationships and order history</p>
+        </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-        <div className="card p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center"><FiUser className="text-brand-600" /></div>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-border-light dark:border-gray-700 shadow-sm">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-brand-50 dark:bg-brand-900/20 text-brand-500 flex items-center justify-center text-xl">
+              <FiUser />
+            </div>
             <div>
-              <p className="text-2xl font-bold text-text-primary">{totalCustomers}</p>
-              <p className="text-xs text-text-muted">Total customers</p>
+              <p className="text-2xl font-bold dark:text-white">{Object.keys(customersData).length}</p>
+              <p className="text-xs text-text-muted uppercase tracking-wider font-semibold">Total Customers</p>
             </div>
           </div>
         </div>
-        <div className="card p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-success-50 flex items-center justify-center"><FiCreditCard className="text-success-600" /></div>
+        <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-border-light dark:border-gray-700 shadow-sm">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-success-50 dark:bg-success-900/20 text-success-500 flex items-center justify-center text-xl">
+              <FiCreditCard />
+            </div>
             <div>
-              <p className="text-2xl font-bold text-text-primary">{String.fromCharCode(8377)}{totalSpent.toLocaleString()}</p>
-              <p className="text-xs text-text-muted">Total revenue</p>
+              <p className="text-2xl font-bold dark:text-white">₹{totalSpent.toLocaleString()}</p>
+              <p className="text-xs text-text-muted uppercase tracking-wider font-semibold">Customer Value</p>
             </div>
           </div>
         </div>
-        {frequent && (
-          <div className="card p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-warning-50 flex items-center justify-center"><FiStar className="text-warning-600" /></div>
-              <div>
-                <p className="text-sm font-bold text-text-primary truncate">{frequent.name || frequent.phone}</p>
-                <p className="text-xs text-text-muted">{frequent.orders.length} orders {String.fromCharCode(183)} {String.fromCharCode(8377)}{frequent.total}</p>
-              </div>
+        <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-border-light dark:border-gray-700 shadow-sm">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-warning-50 dark:bg-warning-900/20 text-warning-500 flex items-center justify-center text-xl">
+              <FiStar />
+            </div>
+            <div>
+              <p className="text-2xl font-bold dark:text-white">
+                {filteredCustomers[0]?.orders.length || 0}
+              </p>
+              <p className="text-xs text-text-muted uppercase tracking-wider font-semibold">Top Visit Count</p>
             </div>
           </div>
-        )}
+        </div>
       </div>
 
-      {/* Controls */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-6">
+      {/* Filters & Search */}
+      <div className="flex flex-col md:flex-row gap-4">
         <div className="relative flex-1">
-          <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted" />
-          <input type="text" placeholder="Search by name or phone..." value={search} onChange={e => setSearch(e.target.value)} className="input pl-10" />
+          <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" />
+          <input 
+            type="text" 
+            placeholder="Search name or phone..." 
+            value={search} 
+            onChange={e => setSearch(e.target.value)} 
+            className="w-full pl-11 pr-4 py-3 bg-white dark:bg-gray-800 border border-border-light dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none dark:text-white"
+          />
         </div>
-        <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="input w-auto min-w-[180px]">
-          <option value="lastSeen">Sort by Last Seen</option>
-          <option value="total">Sort by Total Spent</option>
-          <option value="orders">Sort by Orders</option>
-          <option value="name">Sort by Name</option>
+        <select 
+          value={sortBy} 
+          onChange={e => setSortBy(e.target.value)} 
+          className="px-4 py-3 bg-white dark:bg-gray-800 border border-border-light dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none dark:text-white min-w-[200px]"
+        >
+          <option value="lastSeen">Last Visit</option>
+          <option value="total">Highest Spender</option>
+          <option value="orders">Most Frequent</option>
+          <option value="name">Alphabetical</option>
         </select>
       </div>
 
-      {/* Customer Cards */}
-      <div className="space-y-3">
+      {/* Customer List */}
+      <div className="grid gap-3">
         {filteredCustomers.map((cust) => (
-          <div
-            key={cust.phone}
-            className={`card-hover p-4 cursor-pointer transition-all duration-200 ${expandedPhone === cust.phone ? "ring-1 ring-brand-200" : ""} ${cust.phone === "Unknown" ? "border-danger-200 bg-danger-50/30" : ""}`}
-            onClick={() => setExpandedPhone(expandedPhone === cust.phone ? null : cust.phone)}
+          <div 
+            key={cust.phone} 
+            className={`group bg-white dark:bg-gray-800 border rounded-2xl transition-all duration-200 overflow-hidden ${
+              expandedPhone === cust.phone 
+                ? "border-brand-500 shadow-lg ring-1 ring-brand-500/10" 
+                : "border-border-light dark:border-gray-700 hover:border-brand-300 shadow-sm"
+            }`}
           >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${cust.orders.length >= 10 ? "bg-brand-100" : cust.phone === "Unknown" ? "bg-danger-100" : "bg-surface-tertiary"}`}>
-                  <FiUser className={`${cust.orders.length >= 10 ? "text-brand-600" : cust.phone === "Unknown" ? "text-danger-500" : "text-text-muted"}`} />
+            <div 
+              className="p-4 sm:p-5 cursor-pointer flex items-center justify-between"
+              onClick={() => setExpandedPhone(expandedPhone === cust.phone ? null : cust.phone)}
+            >
+              <div className="flex items-center gap-4 min-w-0">
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 text-lg ${
+                  cust.orders.length >= 5 ? "bg-brand-100 text-brand-600" : "bg-gray-100 dark:bg-gray-700 text-gray-400"
+                }`}>
+                  <FiUser />
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-semibold text-text-primary">{cust.name || "(No Name)"}</span>
-                    {cust.phone !== "Unknown" && <span className="text-xs text-text-muted flex items-center gap-1"><FiPhone className="text-[10px]" />{cust.phone}</span>}
-                    {cust.orders.length >= 10 && <span className="badge-brand">Frequent</span>}
-                    {cust.phone === "Unknown" && <span className="badge-danger">No Phone</span>}
+                    <h3 className="font-bold text-text-primary dark:text-white truncate">{cust.name}</h3>
+                    {cust.orders.length >= 10 && <span className="px-2 py-0.5 bg-brand-50 text-brand-600 text-[10px] font-bold rounded-full uppercase">VIP</span>}
+                    {cust.phone === "Unknown" && <span className="px-2 py-0.5 bg-red-50 text-red-600 text-[10px] font-bold rounded-full uppercase">No Contact</span>}
                   </div>
-                  <div className="flex items-center gap-4 mt-1 text-xs text-text-muted">
-                    <span className="flex items-center gap-1"><FiShoppingBag className="text-[10px]" /> {cust.orders.length} orders</span>
-                    <span>{String.fromCharCode(8377)}{cust.total.toLocaleString()}</span>
-                    <span className="hidden sm:inline">Favorite: {getMostOrderedItem(cust.itemCounts)}</span>
+                  <div className="flex items-center gap-4 mt-1">
+                    <span className="flex items-center gap-1 text-xs text-text-muted font-medium">
+                      <FiPhone size={12} /> {cust.phone}
+                    </span>
+                    <span className="flex items-center gap-1 text-xs text-text-muted font-medium">
+                      <FiShoppingBag size={12} /> {cust.orders.length} Visits
+                    </span>
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-3 shrink-0">
-                <span className="text-xs text-text-muted hidden sm:block">
-                  {cust.lastSeen?.seconds ? new Date(cust.lastSeen.seconds * 1000).toLocaleDateString() : "\u2014"}
-                </span>
-                {expandedPhone === cust.phone ? <FiChevronUp className="text-text-muted" /> : <FiChevronDown className="text-text-muted" />}
+
+              <div className="flex items-center gap-6 shrink-0">
+                <div className="text-right hidden sm:block">
+                  <p className="font-bold text-text-primary dark:text-white">₹{cust.total.toLocaleString()}</p>
+                  <p className="text-[10px] text-text-muted uppercase font-bold tracking-tighter">Total Spent</p>
+                </div>
+                <div className={`p-2 rounded-full transition-colors ${expandedPhone === cust.phone ? "bg-brand-50 text-brand-500" : "text-gray-400 group-hover:bg-gray-50 dark:group-hover:bg-gray-700"}`}>
+                  {expandedPhone === cust.phone ? <FiChevronUp size={20} /> : <FiChevronDown size={20} />}
+                </div>
               </div>
             </div>
 
+            {/* Expanded Order History */}
             {expandedPhone === cust.phone && (
-              <div className="mt-4 pt-4 border-t border-border-light animate-fade-in space-y-2">
-                {cust.orders.slice(0, 5).map((o) => (
-                  <div key={o.id} className="flex items-center justify-between text-sm py-1.5 px-3 rounded-lg bg-surface-secondary/50">
-                    <span className="text-text-muted font-mono text-xs">#{o.id.slice(-4)}</span>
-                    <span className="text-text-secondary text-xs">{o.createdAt?.seconds ? new Date(o.createdAt.seconds * 1000).toLocaleString() : "\u2014"}</span>
-                            <span className="font-medium text-text-primary">{String.fromCharCode(8377)}{o.total}</span>
-                    <div className="flex items-center gap-2">
-                      {o.paid ? <span className="badge-success">Paid</span> : <span className="badge-danger">Unpaid</span>}
-                      <button
-                        onClick={() => toggleOrderPaid(o.id, o.paid)}
-                        className="btn-icon text-text-muted hover:text-text-primary"
-                        title="Toggle paid status"
-                      >
-                        <FiEdit2 className="text-sm" />
-                      </button>
+              <div className="px-5 pb-5 animate-in slide-in-from-top-2 duration-200">
+                <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4 border border-gray-100 dark:border-gray-700">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+                    <div className="space-y-1">
+                      <p className="text-[10px] text-text-muted uppercase font-bold">Favorite Dish</p>
+                      <p className="text-sm font-semibold dark:text-white">{getFavorite(cust.itemCounts)}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-[10px] text-text-muted uppercase font-bold">Last Visit</p>
+                      <p className="text-sm font-semibold dark:text-white">
+                        {cust.lastSeen?.seconds ? new Date(cust.lastSeen.seconds * 1000).toLocaleDateString() : 'N/A'}
+                      </p>
                     </div>
                   </div>
-                ))}
-                {cust.orders.length > 5 && <p className="text-xs text-text-muted text-center pt-1">...and {cust.orders.length - 5} more orders</p>}
-                {cust.phone === "Unknown" && (
-                  <div className="flex items-start gap-2 mt-2 p-3 rounded-xl bg-warning-50 border border-warning-200">
-                    <FiAlertCircle className="text-warning-600 shrink-0 mt-0.5" />
-                    <p className="text-xs text-warning-700">Ask for this customer's phone number on their next visit to merge their orders.</p>
+                  
+                  <h4 className="text-xs font-bold text-text-muted uppercase mb-3 flex items-center gap-2">
+                    <FiCalendar /> Recent Orders
+                  </h4>
+                  <div className="space-y-2">
+                    {cust.orders.slice(0, 5).map((o) => (
+                      <div key={o.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-white dark:hover:bg-gray-800 transition-all border border-transparent hover:border-gray-100 dark:hover:border-gray-700">
+                        <span className="text-xs font-mono text-text-muted">#{o.id.slice(-4)}</span>
+                        <div className="flex items-center gap-3">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${o.paid ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                            {o.paid ? 'PAID' : 'UNPAID'}
+                          </span>
+                          <span className="text-sm font-bold dark:text-white">₹{o.total}</span>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                )}
+                </div>
               </div>
             )}
           </div>
         ))}
-        {filteredCustomers.length === 0 && (
-          <div className="card p-12 text-center">
-            <FiUser className="mx-auto text-3xl text-text-disabled mb-3" />
-            <p className="text-text-muted">No customers found.</p>
-          </div>
-        )}
       </div>
     </div>
   );
