@@ -36,7 +36,7 @@ export default function GlobalSearch({ onNavigate }) {
   const containerRef = useRef(null);
   const inputRef = useRef(null);
 
-  // Fetch data lazily on first focus
+  // Logic: Firebase Data Fetching
   const fetchData = useCallback(async () => {
     if (dataLoaded || !user || loading) return;
     setLoading(true);
@@ -47,28 +47,18 @@ export default function GlobalSearch({ onNavigate }) {
         getDocs(collection(db, "users", user.uid, "inventory")),
       ]);
 
-      setMenuItems(
-        menuSnap.docs.map((d) => ({ id: d.id, ...d.data() }))
-      );
+      setMenuItems(menuSnap.docs.map((d) => ({ id: d.id, ...d.data() })));
 
-      // Derive unique customers from orders
       const customerMap = {};
       ordersSnap.docs.forEach((d) => {
         const order = d.data();
         const phone = order.customerPhone || "";
         if (phone && !customerMap[phone]) {
-          customerMap[phone] = {
-            name: order.customerName || "",
-            phone,
-          };
+          customerMap[phone] = { name: order.customerName || "", phone };
         }
       });
       setCustomers(Object.values(customerMap));
-
-      setInventoryItems(
-        invSnap.docs.map((d) => ({ id: d.id, ...d.data() }))
-      );
-
+      setInventoryItems(invSnap.docs.map((d) => ({ id: d.id, ...d.data() })));
       setDataLoaded(true);
     } catch (e) {
       console.error("GlobalSearch: failed to fetch data", e);
@@ -76,31 +66,11 @@ export default function GlobalSearch({ onNavigate }) {
     setLoading(false);
   }, [user, dataLoaded, loading]);
 
-  // Refetch when data changes (e.g. new items added) — refresh every 60s while open
-  useEffect(() => {
-    if (!open) return;
-    const interval = setInterval(() => {
-      setDataLoaded(false);
-    }, 60000);
-    return () => clearInterval(interval);
-  }, [open]);
-
   useEffect(() => {
     if (open && !dataLoaded) fetchData();
   }, [open, dataLoaded, fetchData]);
 
-  // Close on click outside
-  useEffect(() => {
-    function handleClickOutside(e) {
-      if (containerRef.current && !containerRef.current.contains(e.target)) {
-        setOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  // Keyboard shortcut: Cmd+K or Ctrl+K to focus search
+  // Logic: Keyboard Shortcuts (Cmd+K)
   useEffect(() => {
     function handleGlobalKey(e) {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
@@ -113,86 +83,20 @@ export default function GlobalSearch({ onNavigate }) {
     return () => document.removeEventListener("keydown", handleGlobalKey);
   }, []);
 
-  // Filter results
+  // Filter Logic
   const q = query.toLowerCase().trim();
+  const filteredPages = q ? PAGE_RESULTS.filter((p) => p.name.toLowerCase().includes(q)) : PAGE_RESULTS;
+  const filteredMenu = q ? menuItems.filter((item) => item.name?.toLowerCase().includes(q) || String(item.price).includes(q)) : [];
+  const filteredCustomers = q ? customers.filter((c) => c.name?.toLowerCase().includes(q) || c.phone?.includes(q)) : [];
+  const filteredInventory = q ? inventoryItems.filter((item) => item.name?.toLowerCase().includes(q)) : [];
 
-  const filteredPages = q
-    ? PAGE_RESULTS.filter((p) => p.name.toLowerCase().includes(q))
-    : PAGE_RESULTS;
-
-  const filteredMenu = q
-    ? menuItems.filter(
-        (item) =>
-          item.name?.toLowerCase().includes(q) ||
-          String(item.price).includes(q)
-      )
-    : [];
-
-  const filteredCustomers = q
-    ? customers.filter(
-        (c) =>
-          c.name?.toLowerCase().includes(q) || c.phone?.includes(q)
-      )
-    : [];
-
-  const filteredInventory = q
-    ? inventoryItems.filter((item) =>
-        item.name?.toLowerCase().includes(q)
-      )
-    : [];
-
-  // Build flat list for keyboard navigation
   const allResults = [];
-  filteredPages.forEach((p) =>
-    allResults.push({ ...p, category: "Pages", action: () => navigate(p.name) })
-  );
-  filteredMenu.forEach((item) =>
-    allResults.push({
-      name: item.name,
-      detail: `₹${item.price}${item.inStock ? "" : " · Out of stock"}`,
-      icon: <FiGrid />,
-      type: "menu",
-      category: "Menu Items",
-      action: () => navigate("Menu"),
-    })
-  );
-  filteredCustomers.forEach((c) =>
-    allResults.push({
-      name: c.name || c.phone,
-      detail: c.name ? c.phone : "",
-      icon: <FiUsers />,
-      type: "customer",
-      category: "Customers",
-      action: () => navigate("Customers"),
-    })
-  );
-  filteredInventory.forEach((item) =>
-    allResults.push({
-      name: item.name,
-      detail: `${item.quantity} ${item.unit || "pcs"}`,
-      icon: <FiPackage />,
-      type: "inventory",
-      category: "Inventory",
-      action: () => navigate("Inventory"),
-    })
-  );
+  filteredPages.forEach((p) => allResults.push({ ...p, category: "Pages", action: () => navigate(p.name) }));
+  filteredMenu.forEach((item) => allResults.push({ name: item.name, detail: `₹${item.price}`, icon: <FiGrid />, category: "Menu", action: () => navigate("Menu") }));
+  filteredCustomers.forEach((c) => allResults.push({ name: c.name || c.phone, detail: c.phone, icon: <FiUsers />, category: "Customers", action: () => navigate("Customers") }));
+  filteredInventory.forEach((item) => allResults.push({ name: item.name, detail: `${item.quantity} left`, icon: <FiPackage />, category: "Inventory", action: () => navigate("Inventory") }));
 
-  // Cap results per category
-  const MAX_PER_CATEGORY = 5;
-  const cappedResults = [];
-  const seen = {};
-  for (const r of allResults) {
-    if (!seen[r.category]) seen[r.category] = 0;
-    if (seen[r.category] < MAX_PER_CATEGORY) {
-      cappedResults.push(r);
-      seen[r.category]++;
-    }
-  }
-
-  // Reset highlight when results change
-  useEffect(() => {
-    setHighlightIndex(0);
-  }, [query]);
+  const cappedResults = allResults.slice(0, 20); // Limit total results
 
   function navigate(tabName) {
     onNavigate(tabName);
@@ -201,164 +105,57 @@ export default function GlobalSearch({ onNavigate }) {
     inputRef.current?.blur();
   }
 
-  function handleKeyDown(e) {
-    if (!open) return;
-
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      setHighlightIndex((i) => Math.min(i + 1, cappedResults.length - 1));
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      setHighlightIndex((i) => Math.max(i - 1, 0));
-    } else if (e.key === "Enter") {
-      e.preventDefault();
-      if (cappedResults[highlightIndex]) {
-        cappedResults[highlightIndex].action();
-      }
-    } else if (e.key === "Escape") {
-      setOpen(false);
-      inputRef.current?.blur();
-    }
-  }
-
-  // Group results by category for rendering
-  const grouped = [];
-  let lastCategory = "";
-  cappedResults.forEach((r, i) => {
-    if (r.category !== lastCategory) {
-      grouped.push({ type: "header", label: r.category });
-      lastCategory = r.category;
-    }
-    grouped.push({ ...r, flatIndex: i });
-  });
-
   return (
-    <div ref={containerRef} className="relative order-last basis-full sm:order-none sm:basis-auto flex-1 min-w-[220px] sm:max-w-md">
-      {/* Search input */}
+    <div ref={containerRef} className="relative w-full max-w-md">
+      {/* UI: Combined Styling from both versions */}
       <div className="relative">
-        <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
+        <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted dark:text-gray-500 text-sm sm:text-base pointer-events-none" />
         <input
           ref={inputRef}
           type="text"
-          placeholder="Search..."
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setOpen(true);
+          }}
           onFocus={() => setOpen(true)}
-          onKeyDown={handleKeyDown}
-          className="input pl-9 pr-12 sm:pr-20 py-2 bg-surface-secondary border-transparent focus:bg-surface focus:border-border w-full"
+          placeholder="Search orders, customers, menu..."
+          className="w-full pl-9 pr-10 py-2 text-sm bg-surface-secondary dark:bg-gray-900 border border-border-light dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 dark:text-white transition-all"
         />
-        {/* Shortcut hint */}
-        {!open && !query && (
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none">
-            <kbd className="hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-2xs font-medium text-text-disabled bg-surface-tertiary border border-border-light rounded">
-              ⌘K
-            </kbd>
-          </div>
-        )}
-        {/* Clear button */}
         {query && (
-          <button
-            onClick={() => {
-              setQuery("");
-              inputRef.current?.focus();
-            }}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-secondary transition-colors"
+          <button 
+            onClick={() => setQuery("")}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
           >
-            <FiX className="w-4 h-4" />
+            <FiX size={14} />
           </button>
         )}
       </div>
 
-      {/* Results dropdown */}
-      {open && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-surface border border-border-light rounded-xl shadow-modal z-50 overflow-hidden animate-fade-in max-h-[min(70vh,32rem)]">
-          {/* Loading state */}
-          {loading && (
-            <div className="flex items-center gap-2 px-4 py-3 text-sm text-text-muted">
-              <div className="w-4 h-4 rounded-full border-2 border-brand-500 border-t-transparent animate-spin" />
-              Loading...
+      {/* Dropdown: Sirf tab dikhega jab search open ho */}
+      {open && (query || loading) && (
+        <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl z-50 overflow-hidden max-h-80 overflow-y-auto">
+          {loading ? (
+            <div className="p-4 text-center text-sm text-gray-500">Loading...</div>
+          ) : cappedResults.length > 0 ? (
+            <div className="py-2">
+              {cappedResults.map((item, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => item.action()}
+                  className="w-full flex items-center gap-3 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-left"
+                >
+                  <span className="text-gray-400">{item.icon}</span>
+                  <div className="flex-1">
+                    <div className="text-sm font-medium dark:text-white">{item.name}</div>
+                    {item.detail && <div className="text-xs text-gray-500">{item.detail}</div>}
+                  </div>
+                </button>
+              ))}
             </div>
+          ) : (
+            <div className="p-4 text-center text-sm text-gray-500">No results found</div>
           )}
-
-          {/* Results list */}
-          {!loading && cappedResults.length > 0 && (
-            <div className="max-h-[min(56vh,20rem)] overflow-y-auto py-1">
-              {grouped.map((item, idx) => {
-                if (item.type === "header") {
-                  return (
-                    <div
-                      key={`header-${item.label}`}
-                      className="px-4 pt-3 pb-1 text-2xs font-semibold text-text-muted uppercase tracking-wider"
-                    >
-                      {item.label}
-                    </div>
-                  );
-                }
-
-                const isHighlighted = item.flatIndex === highlightIndex;
-
-                return (
-                  <button
-                    key={`${item.category}-${item.name}-${item.flatIndex}`}
-                    onClick={() => item.action()}
-                    onMouseEnter={() => setHighlightIndex(item.flatIndex)}
-                    className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${
-                      isHighlighted
-                        ? "bg-brand-50 text-brand-700"
-                        : "text-text-primary hover:bg-surface-secondary"
-                    }`}
-                  >
-                    <span
-                      className={`shrink-0 ${
-                        isHighlighted ? "text-brand-500" : "text-text-muted"
-                      }`}
-                    >
-                      {item.icon}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <span className="text-sm font-medium truncate block">
-                        {item.name}
-                      </span>
-                      {item.detail && (
-                        <span className="text-2xs text-text-muted truncate block">
-                          {item.detail}
-                        </span>
-                      )}
-                    </div>
-                    {isHighlighted && (
-                      <FiCornerDownLeft className="shrink-0 w-3.5 h-3.5 text-text-disabled" />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-
-          {/* No results */}
-          {!loading && q && cappedResults.length === 0 && (
-            <div className="px-4 py-8 text-center">
-              <FiSearch className="w-6 h-6 text-text-disabled mx-auto mb-2" />
-              <p className="text-sm text-text-muted">
-                No results for "<span className="font-medium text-text-secondary">{query}</span>"
-              </p>
-            </div>
-          )}
-
-          {/* Footer hint */}
-          <div className="hidden sm:flex border-t border-border-light px-4 py-2 items-center gap-4 text-2xs text-text-disabled">
-            <span className="flex items-center gap-1">
-              <kbd className="px-1 py-0.5 bg-surface-tertiary border border-border-light rounded text-2xs">↑↓</kbd>
-              Navigate
-            </span>
-            <span className="flex items-center gap-1">
-              <kbd className="px-1 py-0.5 bg-surface-tertiary border border-border-light rounded text-2xs">↵</kbd>
-              Select
-            </span>
-            <span className="flex items-center gap-1">
-              <kbd className="px-1 py-0.5 bg-surface-tertiary border border-border-light rounded text-2xs">esc</kbd>
-              Close
-            </span>
-          </div>
         </div>
       )}
     </div>

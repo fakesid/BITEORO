@@ -1,212 +1,176 @@
 import React, { useState } from "react";
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "../firebase";
-import { FiUser, FiBriefcase, FiMail, FiLock, FiArrowRight, FiArrowLeft } from "react-icons/fi";
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { doc, setDoc } from "firebase/firestore";
+import { FiMail, FiLock, FiUser, FiArrowRight, FiArrowLeft } from "react-icons/fi";
 
-function SignUp({ onSignUp }) {
-  const [step, setStep] = useState(1);
+export default function SignUp() {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [name, setName] = useState("");
-  const [businessName, setBusinessName] = useState("");
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
-  const handleNext = () => {
-    setError("");
-    if (!name.trim() || !businessName.trim()) {
-      setError("Name and Business Name are required.");
-      return;
-    }
-    setStep(2);
-  };
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    if (password !== confirmPassword) {
-      setError("Passwords do not match.");
-      return;
-    }
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters.");
-      return;
-    }
     setLoading(true);
+
     try {
+      // 1. Create User in Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      await setDoc(doc(db, "users", userCredential.user.uid), {
-        email,
-        name,
-        businessName,
-        role: "owner",
-        createdAt: serverTimestamp()
+      const user = userCredential.user;
+
+      // 2. Update Auth Profile with Name
+      await updateProfile(user, { displayName: name });
+
+      // 3. Create User Document in Firestore
+      await setDoc(doc(db, "users", user.uid), {
+        uid: user.uid,
+        name: name,
+        email: email,
+        createdAt: new Date(),
+        role: "owner" // Default role
       });
-      if (onSignUp) onSignUp();
+
+      // Navigate window view if necessary
+      window.setAuthView?.("login"); 
     } catch (err) {
-      setError(err.message?.includes("auth/email-already-in-use") ? "This email is already registered." : (err.message || "Failed to sign up."));
+      setError(err.message?.includes("auth/email-already-in-use") 
+        ? "This email is already registered." 
+        : err.message);
     }
     setLoading(false);
   };
 
   return (
-    <div className="min-h-screen flex bg-surface-secondary">
-      {/* Back to landing */}
+    <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 bg-surface-secondary dark:bg-gray-900">
+      {/* Floating Back Button */}
       <button
         onClick={() => window.setAuthView?.("landing")}
-        className="fixed top-3 left-3 sm:top-5 sm:left-5 z-50 flex items-center gap-1.5 text-sm px-2.5 py-1.5 rounded-lg bg-surface/80 backdrop-blur text-text-muted hover:text-text-primary transition-colors lg:bg-transparent lg:px-0 lg:py-0 lg:text-white/70 lg:hover:text-white"
+        className="fixed top-5 left-5 z-50 flex items-center gap-1.5 text-sm font-medium text-text-muted hover:text-text-primary dark:text-gray-400 dark:hover:text-white transition-colors"
       >
         <FiArrowLeft /> Back
       </button>
 
-      {/* Left: Brand panel */}
-      <div className="hidden lg:flex lg:w-[45%] xl:w-[40%] bg-brand-gradient relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-20 -left-10 w-72 h-72 rounded-full bg-white/20" />
-          <div className="absolute bottom-20 right-10 w-96 h-96 rounded-full bg-white/10" />
+      {/* Main SignUp Card */}
+      <div className="w-full max-w-sm sm:max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden border border-border-light dark:border-gray-700 animate-fade-in-up">
+        
+        {/* Header Section */}
+        <div className="p-6 sm:p-8 text-center border-b border-border-light dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
+          <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-brand-gradient flex items-center justify-center shadow-lg shadow-brand-500/20">
+            <span className="text-white text-2xl font-bold">B</span>
+          </div>
+          <h2 className="text-2xl font-bold text-text-primary dark:text-white tracking-tight">
+            Create Account
+          </h2>
+          <p className="text-sm text-text-muted dark:text-gray-400 mt-1">
+            Start managing your restaurant with bite<span className="text-brand-500 font-semibold">ORO</span>
+          </p>
         </div>
-        <div className="relative z-10 flex flex-col justify-between p-12 text-white">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                <span className="text-lg font-bold font-display">B</span>
+
+        {/* Form Section */}
+        <div className="p-6 sm:p-8">
+          <form onSubmit={handleSubmit} className="space-y-5">
+            
+            {/* Full Name Input */}
+            <div>
+              <label className="block text-sm font-medium text-text-secondary dark:text-gray-300 mb-1.5">
+                Full Name
+              </label>
+              <div className="relative">
+                <FiUser className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted dark:text-gray-500" />
+                <input
+                  type="text"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="John Doe"
+                  className="w-full pl-10 pr-4 py-2.5 text-sm bg-white dark:bg-gray-900 border border-border-light dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none dark:text-white transition-all"
+                />
               </div>
-              <span className="text-2xl font-extrabold tracking-tight font-display">biteORO</span>
             </div>
-          </div>
-          <div>
-            <h2 className="text-4xl font-bold leading-tight mb-4">
-              Start managing<br />your business today.
-            </h2>
-            <p className="text-white/70 text-lg leading-relaxed max-w-md">
-              Set up in 30 seconds. No credit card required.
-            </p>
-          </div>
-          <p className="text-white/40 text-sm">&copy; 2026 BiteORO. All rights reserved.</p>
-        </div>
-      </div>
 
-      {/* Right: SignUp form */}
-      <div className="flex-1 flex items-center justify-center p-4 sm:p-8 pt-16 sm:pt-8">
-        <div className="w-full max-w-[400px] animate-fade-in-up">
-          {/* Mobile logo */}
-          <div className="lg:hidden flex items-center gap-2 mb-8">
-            <div className="w-9 h-9 rounded-lg bg-brand-gradient flex items-center justify-center">
-              <span className="text-white text-sm font-bold font-display">B</span>
+            {/* Email Input */}
+            <div>
+              <label className="block text-sm font-medium text-text-secondary dark:text-gray-300 mb-1.5">
+                Email Address
+              </label>
+              <div className="relative">
+                <FiMail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted dark:text-gray-500" />
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  className="w-full pl-10 pr-4 py-2.5 text-sm bg-white dark:bg-gray-900 border border-border-light dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none dark:text-white transition-all"
+                />
+              </div>
             </div>
-            <span className="text-xl font-extrabold tracking-tight font-display">
-              bite<span className="text-brand-500">ORO</span>
-            </span>
-          </div>
 
-          {/* Step indicator */}
-          <div className="flex items-center gap-2 mb-8">
-            <div className={`h-1 flex-1 rounded-full transition-colors duration-300 ${step >= 1 ? "bg-brand-500" : "bg-border"}`} />
-            <div className={`h-1 flex-1 rounded-full transition-colors duration-300 ${step >= 2 ? "bg-brand-500" : "bg-border"}`} />
-          </div>
+            {/* Password Input */}
+            <div>
+              <label className="block text-sm font-medium text-text-secondary dark:text-gray-300 mb-1.5">
+                Password
+              </label>
+              <div className="relative">
+                <FiLock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted dark:text-gray-500" />
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full pl-10 pr-4 py-2.5 text-sm bg-white dark:bg-gray-900 border border-border-light dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none dark:text-white transition-all"
+                />
+              </div>
+            </div>
 
-          <div className="mb-8">
-            <h1 className="text-2xl font-bold text-text-primary tracking-tight">
-              {step === 1 ? "Create your account" : "Set up your login"}
-            </h1>
-            <p className="text-text-muted text-sm mt-1">
-              {step === 1 ? "Tell us about you and your business" : "Choose your email and password"}
-            </p>
-          </div>
-
-          <form onSubmit={step === 1 ? (e) => { e.preventDefault(); handleNext(); } : handleSubmit} className="space-y-5">
-            {step === 1 ? (
-              <>
-                <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-text-secondary mb-1.5">Full Name</label>
-                  <div className="relative">
-                    <FiUser className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted" />
-                    <input id="name" type="text" value={name} onChange={e => setName(e.target.value)} required placeholder="John Doe" className="input pl-10" />
-                  </div>
-                </div>
-                <div>
-                  <label htmlFor="businessName" className="block text-sm font-medium text-text-secondary mb-1.5">Business Name</label>
-                  <div className="relative">
-                    <FiBriefcase className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted" />
-                    <input id="businessName" type="text" value={businessName} onChange={e => setBusinessName(e.target.value)} required placeholder="Cafe Delight" className="input pl-10" />
-                  </div>
-                </div>
-              </>
-            ) : (
-              <>
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-text-secondary mb-1.5">Email</label>
-                  <div className="relative">
-                    <FiMail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted" />
-                    <input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="you@business.com" className="input pl-10" />
-                  </div>
-                </div>
-                <div>
-                  <label htmlFor="password" className="block text-sm font-medium text-text-secondary mb-1.5">Password</label>
-                  <div className="relative">
-                    <FiLock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted" />
-                    <input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} required placeholder="Min 6 characters" className="input pl-10" />
-                  </div>
-                </div>
-                <div>
-                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-text-secondary mb-1.5">Confirm Password</label>
-                  <div className="relative">
-                    <FiLock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted" />
-                    <input id="confirmPassword" type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required placeholder="Repeat your password" className="input pl-10" />
-                  </div>
-                </div>
-              </>
-            )}
-
+            {/* Error Message */}
             {error && (
-              <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-danger-50 border border-danger-100 text-danger-600 text-sm animate-fade-in">
-                <span className="shrink-0">&#9888;</span>
-                {error}
+              <div className="flex items-start gap-2 px-4 py-3 rounded-xl bg-danger-50 dark:bg-danger-900/20 border border-danger-100 dark:border-danger-900/30 text-danger-600 dark:text-danger-400 text-xs animate-fade-in">
+                <span>⚠️</span>
+                <span className="flex-1">{error}</span>
               </div>
             )}
 
-            <div className="flex gap-3">
-              {step === 2 && (
-                  <button type="button" onClick={() => { setStep(1); setError(""); }} className="btn-secondary btn-lg shrink-0">
-                  <FiArrowLeft />
-                </button>
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full btn-primary py-3 rounded-xl flex items-center justify-center gap-2 group font-semibold shadow-lg shadow-brand-500/10 active:scale-[0.98] transition-all"
+            >
+              {loading ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span>Creating Account...</span>
+                </>
+              ) : (
+                <>
+                  <span>Create Account</span>
+                  <FiArrowRight className="group-hover:translate-x-1 transition-transform" />
+                </>
               )}
-              <button type="submit" disabled={loading} className="btn-primary btn-lg w-full">
-                {loading ? (
-                  <span className="flex items-center gap-2">
-                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Creating account...
-                  </span>
-                ) : (
-                  <span className="flex items-center gap-2">
-                    {step === 1 ? "Continue" : "Create account"} <FiArrowRight />
-                  </span>
-                )}
-              </button>
-            </div>
+            </button>
           </form>
 
+          {/* Footer Link */}
           <div className="mt-8 text-center">
-            <span className="text-sm text-text-muted">
+            <p className="text-sm text-text-muted dark:text-gray-400">
               Already have an account?{" "}
               <button
                 type="button"
-                onClick={() => {
-                  window.setAuthView?.("login");
-                  window.dispatchEvent(new CustomEvent('navigateToLogin'));
-                }}
-                className="text-brand-500 hover:text-brand-600 font-semibold transition-colors"
+                onClick={() => window.setAuthView?.("login")}
+                className="text-brand-600 dark:text-brand-400 font-bold hover:underline transition-all"
               >
                 Sign in
               </button>
-            </span>
+            </p>
           </div>
         </div>
       </div>
     </div>
   );
 }
-
-export default SignUp;

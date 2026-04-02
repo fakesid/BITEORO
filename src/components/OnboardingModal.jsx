@@ -1,11 +1,6 @@
 import React, { useState } from "react";
 import { db } from "../firebase";
-import {
-  collection,
-  addDoc,
-  doc,
-  setDoc,
-} from "firebase/firestore";
+import { collection, addDoc, doc, setDoc } from "firebase/firestore";
 import { useAuth } from "../context/AuthContext";
 import {
   FiArrowRight,
@@ -15,6 +10,7 @@ import {
   FiPackage,
   FiZap,
   FiArrowLeft,
+  FiX
 } from "react-icons/fi";
 
 const STEPS = [
@@ -32,33 +28,7 @@ export default function OnboardingModal({ onComplete }) {
   const [adding, setAdding] = useState(false);
   const [animate, setAnimate] = useState(true);
 
-  // Quick-add a menu item
-  const addItem = async () => {
-    if (!itemName.trim() || !itemPrice) return;
-    setAdding(true);
-    try {
-      const ref = collection(db, "users", user.uid, "menu");
-      await addDoc(ref, {
-        name: itemName.trim(),
-        price: parseFloat(itemPrice),
-        inStock: true,
-      });
-      setMenuItems((prev) => [
-        ...prev,
-        { name: itemName.trim(), price: parseFloat(itemPrice) },
-      ]);
-      setItemName("");
-      setItemPrice("");
-    } catch (e) {
-      console.error("Failed to add item:", e);
-    }
-    setAdding(false);
-  };
-
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter") addItem();
-  };
-
+  // Logic: Step Management
   const goNext = () => {
     setAnimate(false);
     setTimeout(() => {
@@ -75,206 +45,140 @@ export default function OnboardingModal({ onComplete }) {
     }, 150);
   };
 
-  const finish = async () => {
-    // Save onboarding flag so it never shows again
+  // Logic: Firebase Functions
+  const addItem = async () => {
+    if (!itemName.trim() || !itemPrice) return;
+    setAdding(true);
     try {
-      await setDoc(
-        doc(db, "users", user.uid, "settings", "onboarding"),
-        { completed: true, completedAt: new Date() },
-        { merge: true }
-      );
-    } catch (e) {
-      console.error("Failed to save onboarding flag:", e);
-    }
+      const ref = collection(db, "users", user.uid, "menu");
+      await addDoc(ref, {
+        name: itemName.trim(),
+        price: parseFloat(itemPrice),
+        inStock: true,
+      });
+      setMenuItems((prev) => [...prev, { name: itemName.trim(), price: parseFloat(itemPrice) }]);
+      setItemName("");
+      setItemPrice("");
+    } catch (e) { console.error(e); }
+    setAdding(false);
+  };
+
+  const finish = async () => {
+    try {
+      await setDoc(doc(db, "users", user.uid, "settings", "onboarding"), {
+        completed: true,
+        completedAt: new Date()
+      }, { merge: true });
+    } catch (e) { console.error(e); }
     onComplete();
   };
 
-  const skip = async () => {
-    await finish();
-  };
+  // ─── UI Content for each Step ───────────────────────
 
-  // ─── Step Content ───────────────────────────────────
-
-  const welcomeStep = (
+  const WelcomeView = (
     <div className="flex flex-col items-center text-center">
-      {/* Animated icon */}
-      <div className="w-20 h-20 rounded-2xl bg-brand-gradient flex items-center justify-center mb-6 shadow-lg shadow-brand-200">
-        <FiZap className="text-white text-3xl" />
+      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-brand-gradient flex items-center justify-center mb-6 shadow-lg shadow-brand-200">
+        <span className="text-white text-3xl font-bold">B</span>
       </div>
-
-      <h2 className="text-2xl sm:text-3xl font-extrabold text-text-primary mb-3">
-        Welcome to BiteORO!
+      <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-2">
+        Welcome to BiteORO! 👋
       </h2>
-      <p className="text-text-secondary max-w-md mb-2">
+      <p className="text-sm text-gray-500 dark:text-gray-400 mb-8 max-w-xs">
         Let's get your restaurant set up in under a minute. We'll walk you through the essentials.
       </p>
-      <p className="text-xs text-text-muted mb-8">
-        You can always change these settings later.
-      </p>
-
-      <button onClick={goNext} className="btn-primary btn-lg group w-full max-w-xs">
-        Let's go
-        <FiArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
+      <button onClick={goNext} className="w-full btn-primary py-2.5 flex items-center justify-center gap-2 group">
+        Get Started <FiArrowRight className="group-hover:translate-x-1 transition-transform" />
       </button>
-      <button onClick={skip} className="text-sm text-text-muted hover:text-text-secondary mt-4 transition-colors">
+      <button onClick={finish} className="mt-4 text-xs text-gray-400 hover:text-gray-600 transition-colors">
         Skip setup for now
       </button>
     </div>
   );
 
-  const menuStep = (
+  const MenuView = (
     <div className="w-full">
-      <div className="flex items-center gap-3 mb-2">
+      <div className="flex items-center gap-3 mb-6">
         <div className="w-10 h-10 rounded-xl bg-brand-50 text-brand-500 flex items-center justify-center shrink-0">
-          <FiGrid className="text-lg" />
+          <FiGrid size={20} />
         </div>
-        <div>
-          <h2 className="text-xl font-bold text-text-primary">Add your menu items</h2>
-          <p className="text-sm text-text-muted">These are the items customers can order.</p>
+        <div className="text-left">
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white leading-tight">Add your menu</h2>
+          <p className="text-xs text-gray-500">Add at least one item to start.</p>
         </div>
       </div>
 
-      {/* Quick-add form */}
-      <div className="mt-6 grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_7rem_auto] gap-2">
+      <div className="flex gap-2 mb-4">
         <input
-          type="text"
-          placeholder="Item name (e.g. Masala Chai)"
-          value={itemName}
+          type="text" placeholder="Item Name" value={itemName}
           onChange={(e) => setItemName(e.target.value)}
-          onKeyDown={handleKeyDown}
-          className="input flex-1 py-2.5"
-          autoFocus
+          className="flex-1 px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none dark:text-white"
         />
         <input
-          type="number"
-          placeholder="Price"
-          value={itemPrice}
+          type="number" placeholder="₹" value={itemPrice}
           onChange={(e) => setItemPrice(e.target.value)}
-          onKeyDown={handleKeyDown}
-          className="input py-2.5"
-          min="0"
+          className="w-20 px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none dark:text-white"
         />
-        <button
-          onClick={addItem}
-          disabled={!itemName.trim() || !itemPrice || adding}
-          className="btn-primary px-4 py-2.5 shrink-0 justify-center"
-        >
+        <button onClick={addItem} disabled={!itemName || !itemPrice || adding} className="p-2.5 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition-colors">
           <FiPlus />
         </button>
       </div>
 
-      {/* Added items list */}
-      <div className="mt-4 max-h-48 overflow-y-auto space-y-2">
-        {menuItems.length === 0 ? (
-          <div className="text-center py-8 border-2 border-dashed border-border rounded-xl">
-            <FiPackage className="text-2xl text-text-disabled mx-auto mb-2" />
-            <p className="text-sm text-text-muted">No items yet. Add your first one above!</p>
+      <div className="max-h-40 overflow-y-auto space-y-2 mb-6">
+        {menuItems.map((item, i) => (
+          <div key={i} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-100 dark:border-gray-700 animate-fade-in">
+            <span className="text-sm font-medium dark:text-gray-200">{item.name}</span>
+            <span className="text-sm font-bold text-brand-600">₹{item.price}</span>
           </div>
-        ) : (
-          menuItems.map((item, i) => (
-            <div
-              key={i}
-              className="flex items-center justify-between px-4 py-3 bg-surface-secondary rounded-xl animate-fade-in"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-7 h-7 rounded-lg bg-success-50 text-success-500 flex items-center justify-center">
-                  <FiCheck className="text-sm" />
-                </div>
-                <span className="text-sm font-medium text-text-primary">{item.name}</span>
-              </div>
-              <span className="text-sm font-semibold text-text-secondary">₹{item.price}</span>
-            </div>
-          ))
-        )}
+        ))}
       </div>
 
-      {/* Added count */}
-      {menuItems.length > 0 && (
-        <p className="text-xs text-success-600 font-medium mt-3">
-          {menuItems.length} item{menuItems.length > 1 ? "s" : ""} added
-        </p>
-      )}
-
-      {/* Actions */}
-      <div className="flex items-center justify-between mt-6 gap-3">
-        <button onClick={goBack} className="btn-ghost text-sm px-4 py-2">
-          <FiArrowLeft className="mr-1" /> Back
+      <div className="flex justify-between gap-3">
+        <button onClick={goBack} className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 flex items-center gap-1">
+          <FiArrowLeft /> Back
         </button>
-        <div className="flex items-center gap-3 shrink-0">
-          <button onClick={skip} className="text-sm text-text-muted hover:text-text-secondary transition-colors">
-            Skip
-          </button>
-          <button
-            onClick={goNext}
-            className="btn-primary text-sm px-5 py-2.5 group"
-          >
-            {menuItems.length > 0 ? "Continue" : "Skip this step"}
-            <FiArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
-          </button>
-        </div>
+        <button onClick={goNext} className="btn-primary px-6 py-2 text-sm flex items-center gap-2">
+          {menuItems.length > 0 ? "Continue" : "Skip"} <FiArrowRight />
+        </button>
       </div>
     </div>
   );
 
-  const doneStep = (
+  const DoneView = (
     <div className="flex flex-col items-center text-center">
-      {/* Success animation */}
-      <div className="w-20 h-20 rounded-full bg-success-50 border-4 border-success-100 flex items-center justify-center mb-6 animate-scale-in">
-        <FiCheck className="text-success-500 text-3xl" />
+      <div className="w-16 h-16 rounded-full bg-green-50 dark:bg-green-900/20 text-green-500 flex items-center justify-center mb-6 border-4 border-green-100 dark:border-green-900/30 animate-scale-in">
+        <FiCheck size={32} />
       </div>
-
-      <h2 className="text-2xl sm:text-3xl font-extrabold text-text-primary mb-3">
-        You're all set!
-      </h2>
-      <p className="text-text-secondary max-w-md mb-2">
-        {menuItems.length > 0
-          ? `Great — you've added ${menuItems.length} menu item${menuItems.length > 1 ? "s" : ""}. You can always add more from the Menu page.`
-          : "You can add menu items anytime from the Menu page in the sidebar."}
+      <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">You're all set!</h2>
+      <p className="text-sm text-gray-500 dark:text-gray-400 mb-8 max-w-xs">
+        {menuItems.length > 0 ? `Awesome! ${menuItems.length} items added.` : "Your dashboard is ready to explore."}
       </p>
-      <p className="text-sm text-text-muted mb-8">
-        Start taking orders or explore your dashboard.
-      </p>
-
-      <button onClick={finish} className="btn-primary btn-lg group w-full max-w-xs">
+      <button onClick={finish} className="w-full btn-primary py-2.5">
         Go to Dashboard
-        <FiArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
       </button>
     </div>
   );
 
-  const stepContent = [welcomeStep, menuStep, doneStep];
+  const stepViews = [WelcomeView, MenuView, DoneView];
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in">
-      <div className="bg-surface rounded-t-[1.75rem] sm:rounded-2xl shadow-modal w-full h-[92dvh] sm:h-auto sm:max-h-[90dvh] max-w-lg mx-0 sm:mx-4 overflow-hidden animate-scale-in flex flex-col">
-        {/* Progress bar */}
-        <div className="h-1 bg-surface-tertiary">
-          <div
-            className="h-full bg-brand-gradient rounded-full transition-all duration-500 ease-out"
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+      <div className="relative w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden border border-gray-100 dark:border-gray-700">
+        
+        {/* Progress bar at the top */}
+        <div className="absolute top-0 left-0 w-full h-1 bg-gray-100 dark:bg-gray-700">
+          <div 
+            className="h-full bg-brand-gradient transition-all duration-500" 
             style={{ width: `${((step + 1) / STEPS.length) * 100}%` }}
           />
         </div>
 
-        {/* Step indicators */}
-        <div className="flex items-center justify-center gap-2 pt-5 pb-2">
-          {STEPS.map((s, i) => (
-            <div key={s.id} className="flex items-center gap-2">
-              <div
-                className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                  i <= step ? "bg-brand-500 scale-100" : "bg-surface-tertiary scale-75"
-                }`}
-              />
-            </div>
-          ))}
-        </div>
+        {/* Close button */}
+        <button onClick={finish} className="absolute top-3 right-3 p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors z-10">
+          <FiX className="text-gray-400" />
+        </button>
 
-        {/* Content */}
-        <div
-          className={`px-4 sm:px-8 py-5 sm:py-6 transition-all duration-300 overflow-y-auto ${
-            animate ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
-          }`}
-        >
-          {stepContent[step]}
+        <div className={`p-8 transition-all duration-300 ${animate ? "opacity-100 scale-100" : "opacity-0 scale-95"}`}>
+          {stepViews[step]}
         </div>
       </div>
     </div>
