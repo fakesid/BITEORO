@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { db } from "../firebase";
-import { collection, getDocs, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, getDocs, addDoc, serverTimestamp, doc, getDoc } from "firebase/firestore";
 import { useAuth } from "../context/AuthContext";
 import { FiSearch, FiMinus, FiPlus, FiTrash2, FiUser, FiPhone, FiCheck } from "react-icons/fi";
 
@@ -12,6 +12,7 @@ function ImprovedOrderPage({ onOrderPlaced }) {
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [paymentMode, setPaymentMode] = useState("cash");
+  const [billing, setBilling] = useState({ taxRate: 0, taxLabel: "GST", showTaxOnBill: true });
   const [paid, setPaid] = useState(false);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
@@ -29,6 +30,13 @@ function ImprovedOrderPage({ onOrderPlaced }) {
     if (!user) return;
     const snapshot = await getDocs(collection(db, "users", user.uid, "menu"));
     setMenuItems(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+    
+    try {
+      const billDoc = await getDoc(doc(db, "users", user.uid, "settings", "billing"));
+      if (billDoc.exists()) setBilling(prev => ({ ...prev, ...billDoc.data() }));
+    } catch (e) {
+      console.error("Failed to load billing settings:", e);
+    }
   };
 
   const filteredItems = menuItems.filter((item) =>
@@ -52,7 +60,11 @@ function ImprovedOrderPage({ onOrderPlaced }) {
 
   const removeFromCart = (id) => setCart(cart.filter((item) => item.id !== id));
   const clearCart = () => setCart([]);
-  const getTotal = () => cart.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  
+  const getSubtotal = () => cart.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  const getTaxAmount = () => Number((getSubtotal() * (billing.taxRate / 100)).toFixed(2));
+  const getTotal = () => Number((getSubtotal() + getTaxAmount()).toFixed(2));
+  
   const validatePhone = (phone) => /^\d{10}$/.test(phone);
 
   const placeOrder = async () => {
@@ -63,7 +75,9 @@ function ImprovedOrderPage({ onOrderPlaced }) {
     try {
       if (!user) throw new Error("User not authenticated");
       await addDoc(collection(db, "users", user.uid, "orders"), {
-        customerName, customerPhone, items: cart, total: getTotal(), paid, paymentMode, createdAt: serverTimestamp(), status: "new",
+        customerName, customerPhone, items: cart, 
+        subtotal: getSubtotal(), taxAmount: getTaxAmount(), taxRate: billing.taxRate, taxLabel: billing.taxLabel, total: getTotal(), 
+        paid, paymentMode, createdAt: serverTimestamp(), status: "new",
       });
       setCart([]); setCustomerName(""); setCustomerPhone(""); setPaid(false); setSearchTerm(""); setPaymentMode("cash");
       setMessage("Order placed successfully!");
@@ -174,6 +188,25 @@ function ImprovedOrderPage({ onOrderPlaced }) {
             ))
           )}
         </div>
+
+        {cart.length > 0 && (
+          <div className="px-4 sm:px-6 mb-3 space-y-1.5 text-sm font-medium">
+            <div className="flex justify-between text-text-secondary">
+              <span>Subtotal</span>
+              <span>₹{getSubtotal()}</span>
+            </div>
+            {billing.taxRate > 0 && billing.showTaxOnBill && (
+              <div className="flex justify-between text-text-secondary">
+                <span>{billing.taxLabel} <span className="text-2xs">({billing.taxRate}%)</span></span>
+                <span>₹{getTaxAmount()}</span>
+              </div>
+            )}
+            <div className="flex justify-between text-text-primary font-bold pt-2 mt-1 border-t border-border-light text-base">
+              <span>Total</span>
+              <span>₹{getTotal()}</span>
+            </div>
+          </div>
+        )}
 
         {cart.length > 0 && (
           <button onClick={clearCart} className="btn-sm btn-ghost text-danger-500 hover:bg-danger-50 mb-3 mx-4 sm:mx-6 w-auto justify-center">

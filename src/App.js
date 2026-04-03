@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import "@fontsource/montserrat/800.css";
-import { FiHome, FiUsers, FiClock, FiGrid, FiPackage, FiSettings, FiLogOut, FiChevronLeft, FiMenu, FiChevronDown, FiUser } from "react-icons/fi";
+import { FiHome, FiUsers, FiClock, FiGrid, FiPackage, FiSettings, FiLogOut, FiChevronLeft, FiMenu, FiChevronDown, FiUser, FiSmartphone } from "react-icons/fi";
 import GlobalSearch from "./components/GlobalSearch";
 import NotificationBell from "./components/NotificationBell";
 import { doc, getDoc } from "firebase/firestore";
@@ -11,6 +11,7 @@ import History from "./pages/History";
 import MenuManager from "./pages/MenuManager";
 import Inventory from "./pages/Inventory";
 import Settings from "./pages/Settings";
+import QrMenuSettings from "./pages/QrMenuSettings";
 import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
 import LandingPage from "./pages/LandingPage";
@@ -26,6 +27,7 @@ const tabs = [
   { name: "History", component: <History />, icon: <FiClock /> },
   { name: "Menu", component: <MenuManager />, icon: <FiGrid /> },
   { name: "Inventory", component: <Inventory />, icon: <FiPackage /> },
+  { name: "QR Menu", component: <QrMenuSettings />, icon: <FiSmartphone /> },
   { name: "Settings", component: <Settings />, icon: <FiSettings /> },
 ];
 

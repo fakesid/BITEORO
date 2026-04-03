@@ -125,13 +125,23 @@ function RecentOrders() {
 
               {/* Order info */}
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-sm font-semibold text-text-primary">
                     #{order.id.slice(-4)}
                   </span>
                   <span className="text-xs text-text-muted truncate">
                     {order.customerName || "Walk-in"}
                   </span>
+                  {order.tableNumber && (
+                    <span className="text-xs font-extrabold text-brand-500">
+                      (Table {order.tableNumber})
+                    </span>
+                  )}
+                  {order.source === "public_page" && (
+                    <span className="px-1.5 py-0.5 bg-[#0095F6]/10 text-[#0095F6] rounded text-[10px] font-bold uppercase tracking-wider shadow-sm">
+                      Public Link
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-center gap-2 mt-0.5">
                   <span className="text-2xs text-text-disabled">{time}</span>
